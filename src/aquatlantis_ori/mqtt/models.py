@@ -25,6 +25,7 @@ class MethodType(StrEnum):
     GET = "property.get"
     POST = "property.post"
     SET = "property.set"
+    OTA_VERSION = "ota.version"
 
 
 class PropsType(StrEnum):
