@@ -1,0 +1,16 @@
+{
+  "name": "python-aquatlantis-ori",
+  "version": "0.0.1",
+  "description": "Asynchronous Python client for Aquatlantis Ori Smart Controller",
+  "author": "Sander Gols <developer@golles.nl>",
+  "license": "MIT",
+  "engines": {
+    "node": "^24.0.0"
+  },
+  "devDependencies": {
+    "prettier": "3.6.1"
+  },
+  "scripts": {
+    "prettier": "prettier"
+  }
+}

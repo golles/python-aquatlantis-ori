@@ -1,0 +1,20 @@
+name: Setup environment
+description: This action sets up the environment for the project.
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Python and uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        enable-cache: true
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: package.json
+        cache: npm
+
+    - name: Run setup_env script
+      shell: bash
+      run: ./scripts/setup_env.sh

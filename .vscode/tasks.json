@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "pre-commit:all-files",
+      "type": "shell",
+      "command": "uv run pre-commit run --all-files",
+      "problemMatcher": []
+    },
+    {
+      "label": "pre-commit:staged",
+      "type": "shell",
+      "command": "uv run pre-commit run",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run all examples",
+      "type": "shell",
+      "command": "find examples -type f -name \"*.py\" -exec uv run {} \\;",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run CI checks",
+      "type": "shell",
+      "command": "uv run ./scripts/local_ci_checks.sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run tests",
+      "type": "shell",
+      "command": "uv run pytest",
+      "problemMatcher": []
+    },
+    {
+      "label": "Sort all models.py files",
+      "type": "shell",
+      "command": "find src -name models.py -exec uv run scripts/sort_models.py {} \\;",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+[project]
+name = "aquatlantis-ori"
+version = "0.0.1"
+description = "Asynchronous Python client for Aquatlantis Ori Smart Controller"
+authors = [{ name = "Sander Gols", email = "developer@golles.nl" }]
+requires-python = ">=3.13,<3.14"
+readme = "README.md"
+license = "MIT"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "aiohttp>=3.12.0",
+    "mashumaro>=3.16",
+    "orjson>=3.10.0",
+    "paho-mqtt>=2.1.0",
+]
+
+[project.urls]
+Documentation = "https://github.com/golles/python-aquatlantis-ori"
+Homepage = "https://github.com/golles/python-aquatlantis-ori"
+Repository = "https://github.com/golles/python-aquatlantis-ori"
+Issues = "https://github.com/golles/python-aquatlantis-ori/issues"
+
+[dependency-groups]
+dev = [
+    "mypy==1.17.0",
+    "pre-commit==4.2.0",
+    "pylint==3.3.7",
+    "pytest==8.4.1",
+    "pytest-asyncio==1.1.0",
+    "pytest-cov==6.2.1",
+    "ruff==0.12.3",
+    "shellcheck-py==0.10.0.1",
+    "yamllint==1.37.1",
+]
+
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[tool.coverage.run]
+source = ["aquatlantis_ori"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aquatlantis_ori"]
+
+[tool.mypy]
+python_version = "3.13"
+
+[tool.pylint]
+max-line-length=150
+
+[tool.pytest.ini_options]
+addopts = "--cov --cov-report=term --cov-report=xml"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope="function"
+log_cli = true
+log_cli_level = "DEBUG"
+
+[tool.ruff]
+line-length = 150
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "COM812",  # Cause conflicts when used with the formatter.
+  "N803",  # Allow non-lowercase names, for API fields.
+  "N815",  # Allow mixedCase names, for API fields.
+  "TC",  # Runtime (de)serialization requires types to be available at runtime.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = [
+  "INP001",  # These are individual scripts that are not part of the package
+  "S603",  # Allow subprocess calls.
+  "T201",  # Allow prints.
+]
+"tests/**/*.py" = [
+  "S101",  # Allow assertions in tests.
+  "SLF001",  # Allow access to private members in tests.
+  "PLR2004",  # Allow magic numbers in tests.
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["aquatlantis_ori"]

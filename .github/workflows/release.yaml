@@ -1,0 +1,45 @@
+name: Release
+
+on: # yamllint disable-line rule:truthy
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/aquatlantis-ori
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Check out code from GitHub
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+
+      - name: Set project version
+        run: |
+          version="${{ github.event.release.tag_name }}"
+          version=${version#v}
+          uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "$version"
+
+      - name: Build project
+        run: uv build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.whl
