@@ -10,19 +10,10 @@ Before you start contributing, it's essential to familiarize yourself with the c
 
 To ensure a consistent development environment, we recommend using the [devcontainer](https://code.visualstudio.com/docs/devcontainers/containers) or a [GitHub Codespace](https://github.com/codespaces). These tools will provide you with a standardized setup that matches the project's requirements.
 
-If you prefer using a local development environment, you can create a Python virtual environment using the `scripts/setup_env.sh` script. This script uses [uv](https://docs.astral.sh/uv) to manage dependencies and environment settings. It will also install required `npm` tools and autocompletions.
+If you prefer using a local development environment, you can create a Python virtual environment using the `scripts/setup_env.sh` script. This script uses [uv](https://docs.astral.sh/uv) to manage dependencies and environment settings. It will also install the required `npm` tools and autocompletions.
 
 ```sh
 ./scripts/setup_env.sh
-```
-
-### Setting Up the .env File
-
-Some of the scripts (e.g., `update_test_fixtures.py`) and examples require an existing API key. To avoid the hassle of entering an API key every time you run these scripts, you can copy `.env.sample` to `.env` and fill in your API key. The VS Code terminal should automatically source this file when a new terminal is opened when using a devcontainer.
-
-```sh
-cp .env.sample .env
-# Edit the .env file to add your API key
 ```
 
 ### Pre-Commit Hook
