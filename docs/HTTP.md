@@ -12,9 +12,12 @@ The HTTP API is used for initial authentication, device discovery, and firmware 
 
 To authenticate with the Ori controller, you need to provide your email and password. The authentication endpoint will return a session token that is used for subsequent requests.
 
-Endpoint: `http://8.209.119.184:8888/api/user/login?grant_type=app&brand=Aquatlantis`
-Method: `POST`
-Headers: None
+| Property | Value                                                                       |
+| -------- | --------------------------------------------------------------------------- |
+| Endpoint | `http://8.209.119.184:8888/api/user/login?grant_type=app&brand=Aquatlantis` |
+| Method   | `POST`                                                                      |
+| Headers  | None                                                                        |
+
 Body:
 
 ```json
@@ -57,9 +60,12 @@ Notes:
 
 Get information about the authenticated user.
 
-Endpoint: `http://8.209.119.184:8888/api/user/info`
-Method: `PUT`
-Headers: None
+| Property | Value                                     |
+| -------- | ----------------------------------------- |
+| Endpoint | `http://8.209.119.184:8888/api/user/info` |
+| Method   | `PUT`                                     |
+| Headers  | None                                      |
+
 Body:
 
 ```json
@@ -98,15 +104,12 @@ Notes:
 
 To log out from the Ori controller, you can use the logout endpoint.
 
-Endpoint: `http://8.209.119.184:8888/api/user/logout`
-Method: `POST`
-Headers:
-
-```txt
-Authentication: `Bearer token`
-```
-
-Body: None
+| Property | Value                                       |
+| -------- | ------------------------------------------- |
+| Endpoint | `http://8.209.119.184:8888/api/user/logout` |
+| Method   | `POST`                                      |
+| Headers  | `Authentication: Bearer token`              |
+| Body     | None                                        |
 
 Response:
 
@@ -128,15 +131,12 @@ Notes:
 
 To discover all devices associated with the authenticated user, you can use the following endpoint.
 
-Endpoint: `http://8.209.119.184:8888/api/device/list_all`
-Method: `GET`
-Headers:
-
-```txt
-Authentication: `Bearer token`
-```
-
-Body: None
+| Property | Value                                           |
+| -------- | ----------------------------------------------- |
+| Endpoint | `http://8.209.119.184:8888/api/device/list_all` |
+| Method   | `GET`                                           |
+| Headers  | `Authentication: Bearer token`                  |
+| Body     | None                                            |
 
 Response:
 
@@ -201,15 +201,12 @@ Notes:
 
 To get detailed information about a specific device, you can use the following endpoint. You need to replace `uuid` with the actual id of the device.
 
-Endpoint: `http://8.209.119.184:8888/api/device/info/uuid`
-Method: `GET`
-Headers:
-
-```txt
-Authentication: `Bearer token`
-```
-
-Body: None
+| Property | Value                                            |
+| -------- | ------------------------------------------------ |
+| Endpoint | `http://8.209.119.184:8888/api/device/info/uuid` |
+| Method   | `GET`                                            |
+| Headers  | `Authentication: Bearer token`                   |
+| Body     | None                                             |
 
 Response:
 
@@ -262,13 +259,11 @@ Response:
 
 To get the latest firmware information for a specific device, you can use the following endpoint. You need to replace `Aquatlantis527` with the actual pkey of the device.
 
-Endpoint: `http://8.209.119.184/api/device/configure_sensor_noti_email/device_uuid`
-Method: `PUT`
-Headers:
-
-```txt
-Authentication: `Bearer token`
-```
+| Property | Value                                                                     |
+| -------- | ------------------------------------------------------------------------- |
+| Endpoint | `http://8.209.119.184/api/device/configure_sensor_noti_email/device_uuid` |
+| Method   | `PUT`                                                                     |
+| Headers  | `Authentication: Bearer token`                                            |
 
 Body:
 
@@ -335,15 +330,12 @@ Notes:
 
 To get firmware information for the Ori controller, you can use the firmware endpoint.
 
-Endpoint: `http://8.209.119.184:8888/api/firmware/latest?brand=Aquatlantis&pkey=Aquatlantis527`
-Method: `POST`
-Headers:
-
-```txt
-Authentication: `Bearer token`
-```
-
-Body: None
+| Property | Value                                                                                 |
+| -------- | ------------------------------------------------------------------------------------- |
+| Endpoint | `http://8.209.119.184:8888/api/firmware/latest?brand=Aquatlantis&pkey=Aquatlantis527` |
+| Method   | `POST`                                                                                |
+| Headers  | `Authentication: Bearer token`                                                        |
+| Body     | None                                                                                  |
 
 Response:
 
