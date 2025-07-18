@@ -211,7 +211,12 @@ class Device:
     def update_status(self: Self, data: StatusPayload) -> None:
         """Update the status of the device."""
         logger.debug("%s setting status to %s", self.devid, data.status)
+        restored = self.status == StatusType.OFFLINE and data.status != StatusType.ONLINE
         self.status = StatusType(data.status)
+
+        if restored:
+            logger.info("%s restored came back online", self.devid)
+            self.force_update()
 
     def update_firmware_data(self: Self, data: LatestFirmwareResponseData) -> None:
         """Update the device firmware data from HTTP response."""

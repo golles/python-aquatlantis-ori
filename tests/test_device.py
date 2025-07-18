@@ -580,6 +580,43 @@ def test_update_status(mock_mqtt_client: MagicMock, sample_http_data: ListAllDev
     assert device.status == StatusType.OFFLINE
 
 
+@pytest.mark.usefixtures("mock_random_id")
+def test_update_status_restored(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
+    """Test updating device status from offline to online, force update should be called."""
+    device = Device(mock_mqtt_client, sample_http_data)
+    device.status = StatusType.OFFLINE
+
+    status_data = StatusPayload(
+        username="testuser",
+        timestamp=1752702401491,
+        status=StatusType.ONLINE,
+        reason=None,
+        port=8080,
+        pkey="testpkey",
+        ip="192.168.1.100",
+        devid="testdevid",
+        clientid="client123",
+        brand="Aquatlantis",
+        app=0,
+    )
+
+    device.update_status(status_data)
+    assert device.status == StatusType.ONLINE
+
+    # verify that force_update was called
+    assert mock_mqtt_client.publish.call_count == 2
+    call_args = mock_mqtt_client.publish.call_args
+    topic, payload = call_args[0]
+
+    assert topic == "$username/Aquatlantis&testpkey&testdevid/reqfrom/creator123"
+    assert payload.id == "randomid123"
+    assert payload.brand == "Aquatlantis"
+    assert payload.devid == "testdevid"
+    assert payload.method == MethodType.GET
+    assert payload.pkey == "testpkey"
+    assert payload.param.props == list(PropsType)
+
+
 def test_update_firmware_data(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
     """Test updating firmware data."""
     device = Device(mock_mqtt_client, sample_http_data)
