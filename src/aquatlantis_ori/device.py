@@ -211,7 +211,7 @@ class Device:
     def update_status(self: Self, data: StatusPayload) -> None:
         """Update the status of the device."""
         logger.debug("%s setting status to %s", self.devid, data.status)
-        restored = self.status == StatusType.OFFLINE and data.status != StatusType.ONLINE
+        restored = self.status == StatusType.OFFLINE and data.status == StatusType.ONLINE
         self.status = StatusType(data.status)
 
         if restored:
