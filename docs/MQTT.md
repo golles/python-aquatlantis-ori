@@ -66,6 +66,7 @@ There is a message that can be sent to request data back. This can be used as an
 ### Request
 
 Topic: `$username/Aquatlantis&Aquatlantis527&ESP-XXX/reqfrom/user_uuid`
+
 Payload:
 
 ```json
@@ -120,6 +121,7 @@ Notes:
 ### Response
 
 Topic: `$username/Aquatlantis&Aquatlantis527&ESP-XXX/respto/user_uuid`
+
 Payload:
 
 ```json
@@ -171,6 +173,7 @@ Payload:
 Device updates are provided when they change.
 
 Topic: `$username/Aquatlantis&Aquatlantis527&ESP-XXX/property/set`
+
 Payload:
 
 ```json
@@ -196,6 +199,7 @@ Notes:
 Sensor updates appear to be provided on a time-based interval. This appears to be every 5 minutes.
 
 Topic: `$username/Aquatlantis&Aquatlantis527&ESP-XXX/property/sensor/post`
+
 Payload:
 
 ```json
@@ -245,8 +249,9 @@ Notes:
 
 ## Firmware/OTA
 
-topic: `$username/Aquatlantis&Aquatlantis527&ESP-XXX/ota/version`
-payload:
+Topic: `$username/Aquatlantis&Aquatlantis527&ESP-XXX/ota/version`
+
+Payload:
 
 ```json
 {
@@ -269,6 +274,7 @@ Some values of the device can be controlled via MQTT, such as `power`, `dynamic_
 ### Power control
 
 Topic: `$username/Aquatlantis&Aquatlantis527&ESP-XXX/property/set`
+
 Payload:
 
 ```json
@@ -292,6 +298,7 @@ Notes:
 ### Light control - setting several properties
 
 Topic: `$username/Aquatlantis&Aquatlantis527&ESP-XXX/property/set`
+
 Payload:
 
 ```json
@@ -315,8 +322,9 @@ Payload:
 
 ## NTP requests
 
-topic: `$username/Aquatlantis&Aquatlantis527&ESP-XXX/ntp/request`
-payload:
+Topic: `$username/Aquatlantis&Aquatlantis527&ESP-XXX/ntp/request`
+
+Payload:
 
 ```json
 {
@@ -324,8 +332,9 @@ payload:
 }
 ```
 
-topic: `$username/Aquatlantis&Aquatlantis527&ESP-XXX/ntp/response`
-payload:
+Topic: `$username/Aquatlantis&Aquatlantis527&ESP-XXX/ntp/response`
+
+Payload:
 
 ```json
 {
