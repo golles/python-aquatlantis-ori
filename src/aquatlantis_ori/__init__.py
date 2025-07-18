@@ -2,6 +2,7 @@
 
 from .client import AquatlantisOriClient
 from .device import Device
+from .exceptions import AquatlantisOriError
 from .models import (
     DynamicModeType,
     LightOptions,
@@ -17,6 +18,7 @@ from .models import (
 
 __all__ = [
     "AquatlantisOriClient",
+    "AquatlantisOriError",
     "Device",
     "DynamicModeType",
     "LightOptions",
