@@ -85,3 +85,11 @@ class LightOptions:
     green: int | None = None
     blue: int | None = None
     white: int | None = None
+
+
+@dataclass
+class Threshold:
+    """Threshold model."""
+
+    min_value: float
+    max_value: float

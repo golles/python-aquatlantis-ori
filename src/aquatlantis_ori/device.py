@@ -6,11 +6,13 @@ from datetime import datetime
 from typing import Any, Self
 
 from aquatlantis_ori.helpers import (
-    convert_tenths_to_celsius,
-    convert_tenths_to_celsius_list,
     datetime_str_to_datetime,
+    float_from_tenths,
+    light_options_from_list,
     ms_timestamp_to_datetime,
     random_id,
+    threshold_from_list,
+    time_curves_from_list,
 )
 from aquatlantis_ori.http.models import LatestFirmwareResponseData, ListAllDevicesResponseDevice
 from aquatlantis_ori.models import (
@@ -23,6 +25,7 @@ from aquatlantis_ori.models import (
     SensorType,
     SensorValidType,
     StatusType,
+    Threshold,
     TimeCurve,
 )
 from aquatlantis_ori.mqtt.client import AquatlantisOriMQTTClient
@@ -69,10 +72,10 @@ class Device:
     version: str | None = None  # Firmware version of the device
     ssid: str | None = None  # Wi-Fi SSID
     intensity: int | None = None  # Light intensity (0-100)
-    custom1: list[int] | None = None  # User defined button 1, [intensity, red, green, blue, white]
-    custom2: list[int] | None = None  # User defined button 2, [intensity, red, green, blue, white]
-    custom3: list[int] | None = None  # User defined button 3, [intensity, red, green, blue, white]
-    custom4: list[int] | None = None  # User defined button 4, [intensity, red, green, blue, white]
+    custom1: LightOptions | None = None  # User defined preset 1
+    custom2: LightOptions | None = None  # User defined preset 2
+    custom3: LightOptions | None = None  # User defined preset 3
+    custom4: LightOptions | None = None  # User defined preset 4
     timecurve: list[TimeCurve] | None = None  # The user defined automatic mode schedule for light intensity and colors
     preview: PreviewType | None = None  # If the automatic mode schedule is previewed
     light_type: LightType | None = None  # Type of light used by the device
@@ -82,9 +85,9 @@ class Device:
     sensor_type: SensorType | None = None  # Type of sensor used by the device
     water_temperature: float | None = None  # Water temperature in degrees Celsius
     sensor_valid: SensorValidType | None = None  # Valid has temperature sensor data
-    water_temperature_thresholds: list[int] | None = None  # Water temperature thresholds, [min, max]
-    air_temperature_thresholds: list[int] | None = None  # Air temperature thresholds, [min, max]
-    air_humidity_thresholds: list[int] | None = None  # Air humidity thresholds, [min, max]
+    water_temperature_thresholds: Threshold | None = None  # Water temperature thresholds
+    air_temperature_thresholds: Threshold | None = None  # Air temperature thresholds
+    air_humidity_thresholds: Threshold | None = None  # Air humidity thresholds
     red: int | None = None  # Red color channel (0-100)
     green: int | None = None  # Green color channel (0-100)
     blue: int | None = None  # Blue color channel (0-100)
@@ -165,22 +168,22 @@ class Device:
             "ssid": lambda v: v,
             "intensity": lambda v: v,
             "ip": lambda v: v,
-            "custom1": lambda v: v,
-            "custom2": lambda v: v,
-            "custom3": lambda v: v,
-            "custom4": lambda v: v,
-            "timecurve": self._make_time_curves,
+            "custom1": light_options_from_list,
+            "custom2": light_options_from_list,
+            "custom3": light_options_from_list,
+            "custom4": light_options_from_list,
+            "timecurve": time_curves_from_list,
             "preview": PreviewType,
             "light_type": LightType,
-            "dynamic_mode": lambda v: v,
+            "dynamic_mode": DynamicModeType,
             "mode": ModeType,
             "power": PowerType,
             "sensor_type": SensorType,
-            "water_temperature": convert_tenths_to_celsius,
+            "water_temperature": float_from_tenths,
             "sensor_valid": SensorValidType,
-            "water_temperature_thresholds": convert_tenths_to_celsius_list,
-            "air_temperature_thresholds": convert_tenths_to_celsius_list,
-            "air_humidity_thresholds": lambda v: v,
+            "water_temperature_thresholds": threshold_from_list,
+            "air_temperature_thresholds": threshold_from_list,
+            "air_humidity_thresholds": threshold_from_list,
             "red": lambda v: v,
             "green": lambda v: v,
             "blue": lambda v: v,
@@ -226,31 +229,6 @@ class Device:
         self.firmware_name = data.firmwareName
         logger.debug("%s setting firmware_path to %s", self.devid, data.firmwarePath)
         self.firmware_path = data.firmwarePath
-
-    def _make_time_curves(self: Self, data: list) -> list[TimeCurve]:
-        """Parse a flat list of timecurve data into a list of TimeCurve objects.
-
-        The first element in the list indicates the number of curve entries and is ignored.
-        Each subsequent 7 elements represent a single timecurve entry, in the following order:
-            [hour, minute, intensity, ch1brt, ch2brt, ch3brt, ch4brt]
-
-        Args:
-            data (list): Raw timecurve data from the device.
-
-        Returns:
-            list[TimeCurve]: List of parsed TimeCurve instances.
-        """
-        if not data:
-            return []
-
-        # Skip the first item which is the lenght.
-        entries = data[1:]
-
-        if len(entries) % 7 != 0:
-            msg = "Timecurve data length is not a multiple of 7 after skipping the count."
-            raise ValueError(msg)
-
-        return [TimeCurve(*entries[i : i + 7]) for i in range(0, len(entries), 7)]
 
     def force_update(self: Self) -> None:
         """Force an update of the device state."""
