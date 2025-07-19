@@ -38,6 +38,7 @@ class Device:
     """Aquatlantis Ori Device."""
 
     _mqtt_client: AquatlantisOriMQTTClient
+    has_received_data: bool = False  # Indicates if the device has received
 
     # Variables from HTTP and MQTT response
     status: StatusType  # Device status
@@ -210,6 +211,8 @@ class Device:
                 transformed_value = transform(value)
                 logger.debug("%s setting %s to %s", self.devid, field, transformed_value)
                 setattr(self, field, transformed_value)
+
+        self.has_received_data = True
 
     def update_status(self: Self, data: StatusPayload) -> None:
         """Update the status of the device."""

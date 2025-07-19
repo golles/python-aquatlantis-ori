@@ -106,6 +106,29 @@ def test_get_device_found(client: AquatlantisOriClient) -> None:
     assert result is device
 
 
+def test_wait_until_devices_have_data(client: AquatlantisOriClient) -> None:
+    """Test waiting until all devices have data."""
+    device1 = MagicMock()
+    device1.has_received_data = True
+    device2 = MagicMock()
+    device2.has_received_data = True
+    client._devices = [device1, device2]
+
+    asyncio.run(client.wait_for_data())
+
+
+def test_wait_until_devices_have_data_not_ready(client: AquatlantisOriClient) -> None:
+    """Test waiting until devices have data when not all devices are ready."""
+    device1 = MagicMock()
+    device1.has_received_data = False
+    device2 = MagicMock()
+    device2.has_received_data = True
+    client._devices = [device1, device2]
+
+    with pytest.raises(TimeoutError):
+        asyncio.run(client.wait_for_data(interval=0.1, max_wait=0.5))
+
+
 def test_update_device_state_not_found(client: AquatlantisOriClient, caplog: LogCaptureFixture) -> None:
     """Test updating device state for a device that is not found."""
     client._devices = []

@@ -1,5 +1,6 @@
 """Client."""
 
+import asyncio
 import logging
 from types import TracebackType
 from typing import Self
@@ -102,6 +103,28 @@ class AquatlantisOriClient:
             return None
 
         return device
+
+    async def wait_for_data(self: Self, interval: float = 0.2, max_wait: float = 5.0) -> None:
+        """Wait for all devices to have data within a specified time frame.
+
+        This function will check every `interval` seconds until all devices have data or until `max_wait` seconds have passed.
+
+        Args:
+            interval (float): The interval in seconds to check for data.
+            max_wait (float): The maximum time in seconds to wait for all devices to have data.
+
+        Raises:
+            TimeoutError: If the maximum wait time is exceeded.
+        """
+
+        async def _check() -> None:
+            while True:
+                devices = self.get_devices()
+                if all(device.has_received_data for device in devices):
+                    return
+                await asyncio.sleep(interval)
+
+        await asyncio.wait_for(_check(), timeout=max_wait)
 
     def _update_device_state(self: Self, devid: str, data: MQTTRetrievePayloadParam) -> None:
         """Update the state of a device."""
