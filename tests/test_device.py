@@ -8,7 +8,7 @@ import pytest
 
 from aquatlantis_ori.device import Device
 from aquatlantis_ori.http.models import LatestFirmwareResponseData, ListAllDevicesResponseDevice
-from aquatlantis_ori.models import DynamicModeType, LightOptions, ModeType, PowerType, PreviewType, StatusType, TimeCurve
+from aquatlantis_ori.models import DynamicModeType, LightOptions, ModeType, PowerType, PreviewType, StatusType, Threshold, TimeCurve
 from aquatlantis_ori.mqtt.client import AquatlantisOriMQTTClient
 from aquatlantis_ori.mqtt.models import MethodType, MQTTRetrievePayloadParam, PropsType, StatusPayload
 
@@ -208,8 +208,8 @@ def test_update_mqtt_data(
     assert device.ssid == "TestWiFi"
     assert device.ip == "192.168.1.100"
     assert device.intensity == 80
-    assert device.custom1 == [75, 255, 128, 64, 200]
-    assert device.custom2 == [50, 200, 100, 50, 150]
+    assert device.custom1 == LightOptions(intensity=75, red=255, green=128, blue=64, white=200)
+    assert device.custom2 == LightOptions(intensity=50, red=200, green=100, blue=50, white=150)
     assert device.custom3 is None
     assert device.custom4 is None
     assert device.preview == PreviewType.ON
@@ -219,8 +219,8 @@ def test_update_mqtt_data(
     assert device.power == PowerType.ON
     assert device.sensor_type == 1
     assert device.water_temperature == 25.0  # Converted from 250
-    assert device.water_temperature_thresholds == [20.0, 30.0]  # Converted from [200, 300]
-    assert device.air_temperature_thresholds == [15.0, 25.0]  # Converted from [150, 250]
+    assert device.water_temperature_thresholds == Threshold(20.0, 30.0)  # Converted from [200, 300]
+    assert device.air_temperature_thresholds == Threshold(15.0, 25.0)  # Converted from [150, 250]
     assert device.sensor_valid == 1
 
     # Check datetime conversion
@@ -238,40 +238,6 @@ def test_update_mqtt_data(
         assert device.timecurve[1].hour == 18
         assert device.timecurve[1].minute == 30
         assert device.timecurve[1].intensity == 80
-
-
-def test_make_time_curves_empty(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
-    """Test _make_time_curves with empty data."""
-    device = Device(mock_mqtt_client, sample_http_data)
-
-    result = device._make_time_curves([])
-    assert result == []
-
-
-def test_make_time_curves_invalid_length(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
-    """Test _make_time_curves with invalid data length."""
-    device = Device(mock_mqtt_client, sample_http_data)
-
-    with pytest.raises(ValueError, match="Timecurve data length is not a multiple of 7"):
-        device._make_time_curves([2, 1, 2, 3, 4, 5])
-
-
-def test_make_time_curves_valid(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
-    """Test _make_time_curves with valid data."""
-    device = Device(mock_mqtt_client, sample_http_data)
-
-    data = [1, 12, 30, 75, 100, 80, 60, 40]
-    result = device._make_time_curves(data)
-
-    assert len(result) == 1
-    assert isinstance(result[0], TimeCurve)
-    assert result[0].hour == 12
-    assert result[0].minute == 30
-    assert result[0].intensity == 75
-    assert result[0].red == 100
-    assert result[0].green == 80
-    assert result[0].blue == 60
-    assert result[0].white == 40
 
 
 @pytest.mark.usefixtures("mock_random_id")
