@@ -598,6 +598,6 @@ def test_update_firmware_data(mock_mqtt_client: MagicMock, sample_http_data: Lis
     )
 
     device.update_firmware_data(firmware_data)
-    assert device.latest_firmware_version == 2
+    assert device.latest_firmware_version == "2"
     assert device.firmware_name == "firmware_v2.bin"
     assert device.firmware_path == "http://example.com/firmware_v2.bin"
