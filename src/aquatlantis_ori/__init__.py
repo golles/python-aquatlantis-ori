@@ -3,6 +3,12 @@
 from .client import AquatlantisOriClient
 from .device import Device
 from .exceptions import AquatlantisOriError
+from .http.exceptions import (
+    AquatlantisOriConnectionError,
+    AquatlantisOriDeserializeError,
+    AquatlantisOriLoginError,
+    AquatlantisOriTimeoutError,
+)
 from .models import (
     DynamicModeType,
     LightOptions,
@@ -13,12 +19,17 @@ from .models import (
     SensorType,
     SensorValidType,
     StatusType,
+    Threshold,
     TimeCurve,
 )
 
 __all__ = [
     "AquatlantisOriClient",
+    "AquatlantisOriConnectionError",
+    "AquatlantisOriDeserializeError",
     "AquatlantisOriError",
+    "AquatlantisOriLoginError",
+    "AquatlantisOriTimeoutError",
     "Device",
     "DynamicModeType",
     "LightOptions",
@@ -29,5 +40,6 @@ __all__ = [
     "SensorType",
     "SensorValidType",
     "StatusType",
+    "Threshold",
     "TimeCurve",
 ]
