@@ -95,7 +95,7 @@ class Device:
     white: int | None = None  # White color channel (0-100)
 
     # Variables from http firmware reponse
-    latest_firmware_version: int | None = None  # Latest firmware version available for the device
+    latest_firmware_version: str | None = None  # Latest firmware version available for the device
     firmware_name: str | None = None  # Name of the firmware file
     firmware_path: str | None = None  # Path to the firmware file
 
@@ -227,7 +227,7 @@ class Device:
     def update_firmware_data(self: Self, data: LatestFirmwareResponseData) -> None:
         """Update the device firmware data from HTTP response."""
         logger.debug("%s setting latest_firmware_version to %s", self.devid, data.firmwareVersion)
-        self.latest_firmware_version = data.firmwareVersion
+        self.latest_firmware_version = str(data.firmwareVersion)
         logger.debug("%s setting firmware_name to %s", self.devid, data.firmwareName)
         self.firmware_name = data.firmwareName
         logger.debug("%s setting firmware_path to %s", self.devid, data.firmwarePath)
