@@ -270,6 +270,25 @@ def test_on_mqtt_message_unsupported_topic(client: AquatlantisOriClient, caplog:
     assert "Received message on unsupported topic: foo/unsupported/topic" in caplog.text
 
 
+@pytest.mark.parametrize(
+    "topic",
+    [
+        "$username/Aquatlantis&Aquatlantis527&ESP-XXX/ntp/response",
+        "$username/Aquatlantis&Aquatlantis527&ESP-XXX/ntp/request",
+        "$username/Aquatlantis&Aquatlantis527&ESP-XXX/property/set",
+        "$username/Aquatlantis&Aquatlantis527&ESP-XXX/reqfrom/userid",
+    ],
+)
+def test_on_mqtt_message_unsupported_topic_ignore(client: AquatlantisOriClient, caplog: LogCaptureFixture, topic: str) -> None:
+    """Test handling an ignored unsupported MQTT message topic."""
+    msg = MagicMock()
+    msg.topic = topic
+    msg.payload.decode.return_value = "json"
+    with caplog.at_level("DEBUG"):
+        client._on_mqtt_message(msg)
+    assert f"Received message on unsupported topic: {topic}" not in caplog.text
+
+
 async def test_close_with_connected_mqtt(client: AquatlantisOriClient, mock_http_client: MagicMock, mock_mqtt_client: MagicMock) -> None:
     """Test closing the client when MQTT is connected."""
     mock_http_client.close = AsyncMock()
