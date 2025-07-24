@@ -169,7 +169,7 @@ class AquatlantisOriClient:
         elif message.topic.endswith("/status"):
             status_payload = StatusPayload.from_json(message.payload.decode("utf-8"))
             self._update_device_status(status_payload.devid, status_payload)
-        elif not (message.topic.endswith("/reqfrom/") or message.topic.endswith("/ntp/")):
+        elif not ("/reqfrom/" in message.topic or "/ntp/" in message.topic or message.topic.endswith("/property/set")):
             # Log unsupported topics
             logger.debug("Received message on unsupported topic: %s with payload: %s", message.topic, message.payload.decode("utf-8"))
 
