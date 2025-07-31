@@ -13,13 +13,6 @@ class StatusType(IntEnum):
     ONLINE = 1
 
 
-class PreviewType(IntEnum):
-    """Preview types."""
-
-    OFF = -1
-    ON = 0
-
-
 class DynamicModeType(IntEnum):
     """Dynamic mode types, also known as lightning effect."""
 

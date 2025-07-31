@@ -21,7 +21,6 @@ from aquatlantis_ori.models import (
     LightType,
     ModeType,
     PowerType,
-    PreviewType,
     SensorType,
     SensorValidType,
     StatusType,
@@ -78,7 +77,7 @@ class Device:
     custom3: LightOptions | None = None  # User defined preset 3
     custom4: LightOptions | None = None  # User defined preset 4
     timecurve: list[TimeCurve] | None = None  # The user defined automatic mode schedule for light intensity and colors
-    preview: PreviewType | None = None  # If the automatic mode schedule is previewed
+    preview: int | None = None  # This is the minute of the day in preview, -1 is off, range is 0-1439.
     light_type: LightType | None = None  # Type of light used by the device
     dynamic_mode: DynamicModeType | None = None  # Lightning effect
     mode: ModeType | None = None  # Current mode of the device
@@ -174,7 +173,7 @@ class Device:
             "custom3": light_options_from_list,
             "custom4": light_options_from_list,
             "timecurve": time_curves_from_list,
-            "preview": PreviewType,
+            "preview": int,
             "light_type": LightType,
             "dynamic_mode": DynamicModeType,
             "mode": ModeType,

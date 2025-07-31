@@ -8,7 +8,7 @@ import pytest
 
 from aquatlantis_ori.device import Device
 from aquatlantis_ori.http.models import LatestFirmwareResponseData, ListAllDevicesResponseDevice
-from aquatlantis_ori.models import DynamicModeType, LightOptions, ModeType, PowerType, PreviewType, StatusType, Threshold, TimeCurve
+from aquatlantis_ori.models import DynamicModeType, LightOptions, ModeType, PowerType, StatusType, Threshold, TimeCurve
 from aquatlantis_ori.mqtt.client import AquatlantisOriMQTTClient
 from aquatlantis_ori.mqtt.models import MethodType, MQTTRetrievePayloadParam, PropsType, StatusPayload
 
@@ -212,7 +212,7 @@ def test_update_mqtt_data(
     assert device.custom2 == LightOptions(intensity=50, red=200, green=100, blue=50, white=150)
     assert device.custom3 is None
     assert device.custom4 is None
-    assert device.preview == PreviewType.ON
+    assert device.preview == 0
     assert device.light_type == 1
     assert device.dynamic_mode == DynamicModeType.OFF
     assert device.mode == ModeType.AUTOMATIC
