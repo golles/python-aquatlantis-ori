@@ -236,7 +236,7 @@ class Device:
         """Force an update of the device state."""
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/reqfrom/{self.creator}",
-            MethodType.GET,
+            MethodType.PROPERTY_GET,
             MQTTSendPayloadParam(props=list(PropsType)),
         )
 
@@ -259,7 +259,7 @@ class Device:
         """Set the power state of the device."""
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
-            MethodType.SET,
+            MethodType.PROPERTY_SET,
             MQTTSendPayloadParam(power=power.value),
         )
 
@@ -267,7 +267,7 @@ class Device:
         """Set the power state of the device."""
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
-            MethodType.SET,
+            MethodType.PROPERTY_SET,
             MQTTSendPayloadParam(mode=mode.value),
         )
 
@@ -275,7 +275,7 @@ class Device:
         """Set the dynamic mode of the device."""
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
-            MethodType.SET,
+            MethodType.PROPERTY_SET,
             MQTTSendPayloadParam(dynamic_mode=dynamic_mode.value),
         )
 
@@ -283,7 +283,7 @@ class Device:
         """Set the light intensity of the device."""
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
-            MethodType.SET,
+            MethodType.PROPERTY_SET,
             MQTTSendPayloadParam(intensity=intensity),
         )
 
@@ -291,7 +291,7 @@ class Device:
         """Set the red color intensity of the device."""
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
-            MethodType.SET,
+            MethodType.PROPERTY_SET,
             MQTTSendPayloadParam(ch1brt=red),
         )
 
@@ -299,7 +299,7 @@ class Device:
         """Set the green color intensity of the device."""
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
-            MethodType.SET,
+            MethodType.PROPERTY_SET,
             MQTTSendPayloadParam(ch2brt=green),
         )
 
@@ -307,7 +307,7 @@ class Device:
         """Set the blue color intensity of the device."""
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
-            MethodType.SET,
+            MethodType.PROPERTY_SET,
             MQTTSendPayloadParam(ch3brt=blue),
         )
 
@@ -315,7 +315,7 @@ class Device:
         """Set the white color intensity of the device."""
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
-            MethodType.SET,
+            MethodType.PROPERTY_SET,
             MQTTSendPayloadParam(ch4brt=white),
         )
 
@@ -344,6 +344,6 @@ class Device:
 
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
-            MethodType.SET,
+            MethodType.PROPERTY_SET,
             MQTTSendPayloadParam(**params),
         )
