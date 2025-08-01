@@ -256,7 +256,7 @@ def test_force_update(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevi
     assert payload.id == "randomid123"
     assert payload.brand == "Aquatlantis"
     assert payload.devid == "testdevid"
-    assert payload.method == MethodType.GET
+    assert payload.method == MethodType.PROPERTY_GET
     assert payload.pkey == "testpkey"
     assert payload.param.props == list(PropsType)
 
@@ -273,7 +273,7 @@ def test_set_power(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevices
     topic, payload = call_args[0]
 
     assert topic == "$username/Aquatlantis&testpkey&testdevid/property/set"
-    assert payload.method == MethodType.SET
+    assert payload.method == MethodType.PROPERTY_SET
     assert payload.param.power == PowerType.ON.value
 
 
@@ -289,7 +289,7 @@ def test_set_mode(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesR
     topic, payload = call_args[0]
 
     assert topic == "$username/Aquatlantis&testpkey&testdevid/property/set"
-    assert payload.method == MethodType.SET
+    assert payload.method == MethodType.PROPERTY_SET
     assert payload.param.mode == ModeType.MANUAL.value
 
 
@@ -305,7 +305,7 @@ def test_set_dynamic_mode(mock_mqtt_client: MagicMock, sample_http_data: ListAll
     topic, payload = call_args[0]
 
     assert topic == "$username/Aquatlantis&testpkey&testdevid/property/set"
-    assert payload.method == MethodType.SET
+    assert payload.method == MethodType.PROPERTY_SET
     assert payload.param.dynamic_mode == DynamicModeType.ON.value
 
 
@@ -321,7 +321,7 @@ def test_set_intensity(mock_mqtt_client: MagicMock, sample_http_data: ListAllDev
     topic, payload = call_args[0]
 
     assert topic == "$username/Aquatlantis&testpkey&testdevid/property/set"
-    assert payload.method == MethodType.SET
+    assert payload.method == MethodType.PROPERTY_SET
     assert payload.param.intensity == 75
 
 
@@ -337,7 +337,7 @@ def test_set_red(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesRe
     topic, payload = call_args[0]
 
     assert topic == "$username/Aquatlantis&testpkey&testdevid/property/set"
-    assert payload.method == MethodType.SET
+    assert payload.method == MethodType.PROPERTY_SET
     assert payload.param.ch1brt == 10
 
 
@@ -353,7 +353,7 @@ def test_set_green(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevices
     topic, payload = call_args[0]
 
     assert topic == "$username/Aquatlantis&testpkey&testdevid/property/set"
-    assert payload.method == MethodType.SET
+    assert payload.method == MethodType.PROPERTY_SET
     assert payload.param.ch2brt == 50
 
 
@@ -369,7 +369,7 @@ def test_set_blue(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesR
     topic, payload = call_args[0]
 
     assert topic == "$username/Aquatlantis&testpkey&testdevid/property/set"
-    assert payload.method == MethodType.SET
+    assert payload.method == MethodType.PROPERTY_SET
     assert payload.param.ch3brt == 80
 
 
@@ -385,7 +385,7 @@ def test_set_white(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevices
     topic, payload = call_args[0]
 
     assert topic == "$username/Aquatlantis&testpkey&testdevid/property/set"
-    assert payload.method == MethodType.SET
+    assert payload.method == MethodType.PROPERTY_SET
     assert payload.param.ch4brt == 100
 
 
@@ -402,7 +402,7 @@ def test_set_light(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevices
     topic, payload = call_args[0]
 
     assert topic == "$username/Aquatlantis&testpkey&testdevid/property/set"
-    assert payload.method == MethodType.SET
+    assert payload.method == MethodType.PROPERTY_SET
     assert payload.param.power == PowerType.ON.value
     assert payload.param.intensity == 100
     assert payload.param.ch1brt == 50
@@ -424,7 +424,7 @@ def test_set_light_without_power(mock_mqtt_client: MagicMock, sample_http_data: 
     topic, payload = call_args[0]
 
     assert topic == "$username/Aquatlantis&testpkey&testdevid/property/set"
-    assert payload.method == MethodType.SET
+    assert payload.method == MethodType.PROPERTY_SET
     assert payload.param.power is None
     assert payload.param.intensity == 100
     assert payload.param.ch1brt == 50
@@ -445,7 +445,7 @@ def test_set_light_without_options(mock_mqtt_client: MagicMock, sample_http_data
     topic, payload = call_args[0]
 
     assert topic == "$username/Aquatlantis&testpkey&testdevid/property/set"
-    assert payload.method == MethodType.SET
+    assert payload.method == MethodType.PROPERTY_SET
     assert payload.param.power == PowerType.ON.value
     assert payload.param.intensity is None
     assert payload.param.ch1brt is None
@@ -578,7 +578,7 @@ def test_update_status_restored(mock_mqtt_client: MagicMock, sample_http_data: L
     assert payload.id == "randomid123"
     assert payload.brand == "Aquatlantis"
     assert payload.devid == "testdevid"
-    assert payload.method == MethodType.GET
+    assert payload.method == MethodType.PROPERTY_GET
     assert payload.pkey == "testpkey"
     assert payload.param.props == list(PropsType)
 

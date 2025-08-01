@@ -22,10 +22,11 @@ class MQTTClientSettings:
 class MethodType(StrEnum):
     """Supported method types."""
 
-    GET = "property.get"
-    POST = "property.post"
-    SET = "property.set"
+    PROPERTY_GET = "property.get"
+    PROPERTY_POST = "property.post"
+    PROPERTY_SET = "property.set"
     OTA_VERSION = "ota.version"
+    OTA_CHECK = "ota.check"
 
 
 class PropsType(StrEnum):
