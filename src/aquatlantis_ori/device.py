@@ -265,7 +265,7 @@ class Device:
         # Convert UTC time to device local time if timeoffset is available
         if self.timeoffset is not None:
             current_time = current_time.replace(tzinfo=None)  # Remove UTC timezone
-            current_time = current_time + timedelta(seconds=self.timeoffset)  # Add offset
+            current_time = current_time + timedelta(minutes=self.timeoffset)  # Add offset
 
         current_hour = current_time.hour
         current_minute = current_time.minute
