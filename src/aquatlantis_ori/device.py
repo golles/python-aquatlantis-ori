@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, Self
 
 from aquatlantis_ori.helpers import (
@@ -261,6 +261,12 @@ class Device:
             return None
 
         current_time = datetime.now(tz=UTC)
+
+        # Convert UTC time to device local time if timeoffset is available
+        if self.timeoffset is not None:
+            current_time = current_time.replace(tzinfo=None)  # Remove UTC timezone
+            current_time = current_time + timedelta(seconds=self.timeoffset)  # Add offset
+
         current_hour = current_time.hour
         current_minute = current_time.minute
 

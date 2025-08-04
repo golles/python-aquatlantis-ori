@@ -722,6 +722,83 @@ def test_get_current_timecurve_unordered_list(
     assert result.intensity == 80
 
 
+@patch("aquatlantis_ori.device.datetime")
+def test_get_current_timecurve_with_timezone_offset(
+    mock_datetime: MagicMock, mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice
+) -> None:
+    """Test get_current_timecurve with timezone offset."""
+    # Mock UTC time to 14:30
+    mock_now = datetime(2023, 8, 4, 14, 30, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = mock_now
+
+    device = Device(mock_mqtt_client, sample_http_data)
+    device.timeoffset = 7200  # +2 hours (2 * 3600 seconds)
+    device.timecurve = [
+        TimeCurve(hour=8, minute=0, intensity=5, red=5, green=5, blue=5, white=5),
+        TimeCurve(hour=16, minute=0, intensity=70, red=30, green=60, blue=80, white=60),  # This is 16:00 local time
+        TimeCurve(hour=20, minute=0, intensity=5, red=5, green=5, blue=10, white=5),
+    ]
+
+    # UTC 14:30 + 2 hours = 16:30 local time
+    # Should return the 16:00 timecurve (not the 8:00 one)
+    result = device.get_current_timecurve()
+    assert result is not None
+    assert result.hour == 16
+    assert result.minute == 0
+    assert result.intensity == 70
+
+
+@patch("aquatlantis_ori.device.datetime")
+def test_get_current_timecurve_with_negative_timezone_offset(
+    mock_datetime: MagicMock, mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice
+) -> None:
+    """Test get_current_timecurve with negative timezone offset."""
+    # Mock UTC time to 16:30
+    mock_now = datetime(2023, 8, 4, 16, 30, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = mock_now
+
+    device = Device(mock_mqtt_client, sample_http_data)
+    device.timeoffset = -14400  # -4 hours (US EST offset in seconds)
+    device.timecurve = [
+        TimeCurve(hour=8, minute=0, intensity=5, red=5, green=5, blue=5, white=5),
+        TimeCurve(hour=12, minute=0, intensity=70, red=30, green=60, blue=80, white=60),
+        TimeCurve(hour=16, minute=0, intensity=40, red=10, green=20, blue=30, white=20),
+    ]
+
+    # UTC 16:30 - 4 hours = 12:30 local time
+    # Should return the 12:00 timecurve
+    result = device.get_current_timecurve()
+    assert result is not None
+    assert result.hour == 12
+    assert result.minute == 0
+    assert result.intensity == 70
+
+
+@patch("aquatlantis_ori.device.datetime")
+def test_get_current_timecurve_no_timezone_offset(
+    mock_datetime: MagicMock, mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice
+) -> None:
+    """Test get_current_timecurve when timeoffset is None (fallback to UTC)."""
+    # Mock current time to 14:30 UTC
+    mock_now = datetime(2023, 8, 4, 14, 30, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = mock_now
+
+    device = Device(mock_mqtt_client, sample_http_data)
+    device.timeoffset = None  # No timezone offset available
+    device.timecurve = [
+        TimeCurve(hour=12, minute=0, intensity=80, red=30, green=60, blue=80, white=70),
+        TimeCurve(hour=16, minute=0, intensity=70, red=30, green=60, blue=80, white=60),
+    ]
+
+    # Without timeoffset, should use UTC time directly (14:30)
+    # Should return the 12:00 timecurve
+    result = device.get_current_timecurve()
+    assert result is not None
+    assert result.hour == 12
+    assert result.minute == 0
+    assert result.intensity == 80
+
+
 def test_is_light_on_with_automatic_mode_and_timecurve(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
     """Test is_light_on property with automatic mode and timecurve."""
     device = Device(mock_mqtt_client, sample_http_data)
