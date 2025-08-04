@@ -732,7 +732,7 @@ def test_get_current_timecurve_with_timezone_offset(
     mock_datetime.now.return_value = mock_now
 
     device = Device(mock_mqtt_client, sample_http_data)
-    device.timeoffset = 7200  # +2 hours (2 * 3600 seconds)
+    device.timeoffset = 120  # +2 hours
     device.timecurve = [
         TimeCurve(hour=8, minute=0, intensity=5, red=5, green=5, blue=5, white=5),
         TimeCurve(hour=16, minute=0, intensity=70, red=30, green=60, blue=80, white=60),  # This is 16:00 local time
@@ -758,7 +758,7 @@ def test_get_current_timecurve_with_negative_timezone_offset(
     mock_datetime.now.return_value = mock_now
 
     device = Device(mock_mqtt_client, sample_http_data)
-    device.timeoffset = -14400  # -4 hours (US EST offset in seconds)
+    device.timeoffset = -240  # -4 hours (US EST offset in seconds)
     device.timecurve = [
         TimeCurve(hour=8, minute=0, intensity=5, red=5, green=5, blue=5, white=5),
         TimeCurve(hour=12, minute=0, intensity=70, red=30, green=60, blue=80, white=60),
