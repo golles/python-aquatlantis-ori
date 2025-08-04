@@ -2,6 +2,7 @@
 # pylint: disable=protected-access
 
 from collections.abc import Generator
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -601,3 +602,151 @@ def test_update_firmware_data(mock_mqtt_client: MagicMock, sample_http_data: Lis
     assert device.latest_firmware_version == "2"
     assert device.firmware_name == "firmware_v2.bin"
     assert device.firmware_path == "http://example.com/firmware_v2.bin"
+
+
+def test_get_current_timecurve_no_timecurves(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
+    """Test get_current_timecurve when no timecurves are set."""
+    device = Device(mock_mqtt_client, sample_http_data)
+    device.timecurve = None
+
+    result = device.get_current_timecurve()
+    assert result is None
+
+    device.timecurve = []
+    result = device.get_current_timecurve()
+    assert result is None
+
+
+@patch("aquatlantis_ori.device.datetime")
+def test_get_current_timecurve_normal_case(
+    mock_datetime: MagicMock, mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice
+) -> None:
+    """Test get_current_timecurve with normal operation."""
+    # Mock current time to 14:30 (2:30 PM)
+    mock_now = datetime(2023, 8, 4, 14, 30, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = mock_now
+
+    device = Device(mock_mqtt_client, sample_http_data)
+
+    device.timecurve = [
+        TimeCurve(hour=7, minute=59, intensity=0, red=0, green=0, blue=0, white=0),
+        TimeCurve(hour=8, minute=0, intensity=5, red=5, green=5, blue=5, white=5),
+        TimeCurve(hour=10, minute=0, intensity=70, red=30, green=60, blue=80, white=60),
+        TimeCurve(hour=12, minute=0, intensity=80, red=30, green=60, blue=80, white=70),
+        TimeCurve(hour=16, minute=0, intensity=70, red=30, green=60, blue=80, white=60),
+        TimeCurve(hour=18, minute=0, intensity=40, red=10, green=20, blue=30, white=20),
+        TimeCurve(hour=20, minute=0, intensity=5, red=5, green=5, blue=10, white=5),
+        TimeCurve(hour=21, minute=0, intensity=0, red=0, green=0, blue=0, white=0),
+    ]
+
+    # At 14:30, the active timecurve should be the 12:00 one
+    result = device.get_current_timecurve()
+    assert result is not None
+    assert result.hour == 12
+    assert result.minute == 0
+    assert result.intensity == 80
+
+
+@patch("aquatlantis_ori.device.datetime")
+def test_get_current_timecurve_exact_time(
+    mock_datetime: MagicMock, mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice
+) -> None:
+    """Test get_current_timecurve when current time exactly matches a timecurve."""
+    # Mock current time to exactly 16:00
+    mock_now = datetime(2023, 8, 4, 16, 0, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = mock_now
+
+    device = Device(mock_mqtt_client, sample_http_data)
+    device.timecurve = [
+        TimeCurve(hour=8, minute=0, intensity=5, red=5, green=5, blue=5, white=5),
+        TimeCurve(hour=16, minute=0, intensity=70, red=30, green=60, blue=80, white=60),
+        TimeCurve(hour=20, minute=0, intensity=5, red=5, green=5, blue=10, white=5),
+    ]
+
+    # At exactly 16:00, should return the 16:00 timecurve
+    result = device.get_current_timecurve()
+    assert result is not None
+    assert result.hour == 16
+    assert result.minute == 0
+    assert result.intensity == 70
+
+
+@patch("aquatlantis_ori.device.datetime")
+def test_get_current_timecurve_early_morning(
+    mock_datetime: MagicMock, mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice
+) -> None:
+    """Test get_current_timecurve early in the morning before any timecurve."""
+    # Mock current time to 06:00 (before any timecurve)
+    mock_now = datetime(2023, 8, 4, 6, 0, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = mock_now
+
+    device = Device(mock_mqtt_client, sample_http_data)
+    device.timecurve = [
+        TimeCurve(hour=8, minute=0, intensity=5, red=5, green=5, blue=5, white=5),
+        TimeCurve(hour=16, minute=0, intensity=70, red=30, green=60, blue=80, white=60),
+        TimeCurve(hour=21, minute=0, intensity=0, red=0, green=0, blue=0, white=0),
+    ]
+
+    # At 06:00, should return the last timecurve from "yesterday" (21:00)
+    result = device.get_current_timecurve()
+    assert result is not None
+    assert result.hour == 21
+    assert result.minute == 0
+    assert result.intensity == 0
+
+
+@patch("aquatlantis_ori.device.datetime")
+def test_get_current_timecurve_unordered_list(
+    mock_datetime: MagicMock, mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice
+) -> None:
+    """Test get_current_timecurve with unordered timecurves to ensure sorting works."""
+    # Mock current time to 15:30
+    mock_now = datetime(2023, 8, 4, 15, 30, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = mock_now
+
+    device = Device(mock_mqtt_client, sample_http_data)
+
+    # Deliberately unordered timecurves
+    device.timecurve = [
+        TimeCurve(hour=20, minute=0, intensity=5, red=5, green=5, blue=10, white=5),
+        TimeCurve(hour=8, minute=0, intensity=5, red=5, green=5, blue=5, white=5),
+        TimeCurve(hour=16, minute=0, intensity=70, red=30, green=60, blue=80, white=60),
+        TimeCurve(hour=12, minute=0, intensity=80, red=30, green=60, blue=80, white=70),
+    ]
+
+    # At 15:30, should return the 12:00 timecurve (not the 16:00 one)
+    result = device.get_current_timecurve()
+    assert result is not None
+    assert result.hour == 12
+    assert result.minute == 0
+    assert result.intensity == 80
+
+
+def test_is_light_on_with_automatic_mode_and_timecurve(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
+    """Test is_light_on property with automatic mode and timecurve."""
+    device = Device(mock_mqtt_client, sample_http_data)
+    device.power = PowerType.OFF
+    device.mode = ModeType.AUTOMATIC
+    device.timecurve = [TimeCurve(hour=12, minute=0, intensity=80, red=30, green=60, blue=80, white=70)]  # Need to set timecurve
+
+    # Mock get_current_timecurve to return a timecurve with intensity > 0
+    with patch.object(device, "get_current_timecurve") as mock_get_timecurve:
+        mock_get_timecurve.return_value = TimeCurve(hour=12, minute=0, intensity=80, red=30, green=60, blue=80, white=70)
+        assert device.is_light_on is True
+
+        # Test with intensity = 0
+        mock_get_timecurve.return_value = TimeCurve(hour=21, minute=0, intensity=0, red=0, green=0, blue=0, white=0)
+        assert device.is_light_on is False
+
+        # Test with no timecurve
+        mock_get_timecurve.return_value = None
+        assert device.is_light_on is False
+
+
+def test_is_light_on_with_power_on(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
+    """Test is_light_on property when power is ON."""
+    device = Device(mock_mqtt_client, sample_http_data)
+    device.power = PowerType.ON
+
+    # Should return True regardless of mode or timecurve
+    assert device.is_light_on is True

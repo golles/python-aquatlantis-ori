@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Callable
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Self
 
 from aquatlantis_ori.helpers import (
@@ -254,6 +254,45 @@ class Device:
 
         if self._mqtt_client.is_connected():
             self._mqtt_client.publish(topic, payload)
+
+    def get_current_timecurve(self: Self) -> TimeCurve | None:
+        """Get the current active timecurve based on the current time."""
+        if not self.timecurve:
+            return None
+
+        current_time = datetime.now(tz=UTC)
+        current_hour = current_time.hour
+        current_minute = current_time.minute
+
+        # Sort timecurves by hour and minute
+        sorted_timecurves = sorted(self.timecurve, key=lambda tc: (tc.hour, tc.minute))
+
+        # Find the most recent timecurve that has passed
+        active_timecurve = None
+        for timecurve in sorted_timecurves:
+            if timecurve.hour < current_hour or (timecurve.hour == current_hour and timecurve.minute <= current_minute):
+                active_timecurve = timecurve
+            else:
+                break  # All remaining timecurves are in the future
+
+        # If no timecurve has passed today, use the last one from yesterday
+        if active_timecurve is None and sorted_timecurves:
+            active_timecurve = sorted_timecurves[-1]
+
+        return active_timecurve
+
+    @property
+    def is_light_on(self: Self) -> bool:
+        """Check if the light is on."""
+        if self.power == PowerType.ON:
+            return True
+
+        if self.mode == ModeType.AUTOMATIC and self.timecurve:
+            current_timecurve = self.get_current_timecurve()
+            if current_timecurve and current_timecurve.intensity > 0:
+                return True
+
+        return False
 
     def set_power(self: Self, power: PowerType) -> None:
         """Set the power state of the device."""
