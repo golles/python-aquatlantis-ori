@@ -65,6 +65,24 @@ def time_curves_from_list(data: list[int]) -> list[TimeCurve]:
     return [TimeCurve(*entries[i : i + 7]) for i in range(0, len(entries), 7)]
 
 
+def list_from_time_curves(timecurves: list[TimeCurve]) -> list[int]:
+    """Convert a list of TimeCurve objects back into a flat list format."""
+    data = [len(timecurves)]  # First element is the number of curves
+    for timecurve in timecurves:
+        data.extend(
+            [
+                timecurve.hour,
+                timecurve.minute,
+                timecurve.intensity,
+                timecurve.red,
+                timecurve.green,
+                timecurve.blue,
+                timecurve.white,
+            ]
+        )
+    return data
+
+
 def light_options_from_list(data: list[int]) -> LightOptions:
     """Parse a flat list of light options data into a LightOptions object."""
     no_of_fields = 5

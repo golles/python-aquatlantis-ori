@@ -8,6 +8,7 @@ from aquatlantis_ori.helpers import (
     datetime_str_to_datetime,
     float_from_tenths,
     light_options_from_list,
+    list_from_time_curves,
     ms_timestamp_to_datetime,
     random_id,
     threshold_from_list,
@@ -120,6 +121,43 @@ def test_make_time_curves_valid() -> None:
     assert result[0].green == 80
     assert result[0].blue == 60
     assert result[0].white == 40
+
+
+def test_list_from_time_curves() -> None:
+    """Test list_from_time_curves with valid data."""
+    curves = [
+        TimeCurve(8, 0, 0, 0, 0, 0, 0),
+        TimeCurve(12, 30, 75, 100, 80, 60, 40),
+        TimeCurve(18, 0, 0, 0, 0, 0, 0),
+    ]
+    result = list_from_time_curves(curves)
+
+    expected = [
+        3,  # Number of curves
+        8,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        12,
+        30,
+        75,
+        100,
+        80,
+        60,
+        40,
+        18,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ]
+
+    assert result == expected
 
 
 def test_light_options_from_list() -> None:

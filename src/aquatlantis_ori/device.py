@@ -9,6 +9,7 @@ from aquatlantis_ori.helpers import (
     datetime_str_to_datetime,
     float_from_tenths,
     light_options_from_list,
+    list_from_time_curves,
     ms_timestamp_to_datetime,
     random_id,
     threshold_from_list,
@@ -333,7 +334,7 @@ class Device:
         )
 
     def set_red(self: Self, red: int) -> None:
-        """Set the red color intensity of the device."""
+        """Set the red color of the device."""
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
             MethodType.PROPERTY_SET,
@@ -341,7 +342,7 @@ class Device:
         )
 
     def set_green(self: Self, green: int) -> None:
-        """Set the green color intensity of the device."""
+        """Set the green color of the device."""
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
             MethodType.PROPERTY_SET,
@@ -349,7 +350,7 @@ class Device:
         )
 
     def set_blue(self: Self, blue: int) -> None:
-        """Set the blue color intensity of the device."""
+        """Set the blue color of the device."""
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
             MethodType.PROPERTY_SET,
@@ -357,7 +358,7 @@ class Device:
         )
 
     def set_white(self: Self, white: int) -> None:
-        """Set the white color intensity of the device."""
+        """Set the white color of the device."""
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
             MethodType.PROPERTY_SET,
@@ -391,4 +392,12 @@ class Device:
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
             MethodType.PROPERTY_SET,
             MQTTSendPayloadParam(**params),
+        )
+
+    def set_timecurve(self: Self, timecurves: list[TimeCurve]) -> None:
+        """Set the time curve of the device."""
+        self._publish(
+            f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
+            MethodType.PROPERTY_SET,
+            MQTTSendPayloadParam(timecurve=list_from_time_curves(timecurves)),
         )
