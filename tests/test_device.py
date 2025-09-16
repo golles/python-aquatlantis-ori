@@ -827,3 +827,56 @@ def test_is_light_on_with_power_on(mock_mqtt_client: MagicMock, sample_http_data
 
     # Should return True regardless of mode or timecurve
     assert device.is_light_on is True
+
+
+def test_set_timecurve(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
+    """Test set_timecurve method."""
+    device = Device(mock_mqtt_client, sample_http_data)
+    mock_mqtt_client.reset_mock()
+
+    timecurves = [
+        TimeCurve(hour=8, minute=0, intensity=5, red=5, green=5, blue=5, white=5),
+        TimeCurve(hour=12, minute=0, intensity=80, red=30, green=60, blue=80, white=70),
+        TimeCurve(hour=16, minute=0, intensity=70, red=30, green=60, blue=80, white=60),
+        TimeCurve(hour=20, minute=0, intensity=5, red=5, green=5, blue=10, white=5),
+    ]
+
+    device.set_timecurve(timecurves)
+
+    mock_mqtt_client.publish.assert_called_once()
+    call_args = mock_mqtt_client.publish.call_args
+    topic, payload = call_args[0]
+
+    assert topic == "$username/Aquatlantis&testpkey&testdevid/property/set"
+    assert payload.method == MethodType.PROPERTY_SET
+    assert payload.param.timecurve == [
+        4,  # Number of curves
+        8,
+        0,
+        5,
+        5,
+        5,
+        5,
+        5,
+        12,
+        0,
+        80,
+        30,
+        60,
+        80,
+        70,
+        16,
+        0,
+        70,
+        30,
+        60,
+        80,
+        60,
+        20,
+        0,
+        5,
+        5,
+        5,
+        10,
+        5,
+    ]

@@ -100,6 +100,7 @@ class MQTTSendPayloadParam(DataClassORJSONMixin):
     ch2brt: int | None = None
     ch3brt: int | None = None
     ch4brt: int | None = None
+    timecurve: list[int] | None = None
 
 
 @dataclass
