@@ -4,6 +4,7 @@
 from collections.abc import Generator
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
+from uuid import UUID
 
 import pytest
 
@@ -28,7 +29,7 @@ def fixture_mock_mqtt_client() -> MagicMock:
 def fixture_sample_http_data() -> ListAllDevicesResponseDevice:
     """Create sample HTTP device data."""
     return ListAllDevicesResponseDevice(
-        id="device123",
+        id=UUID("5202cb6e-8d4f-406d-ad39-f49f82760b39"),
         brand="Aquatlantis",
         name="Test Device",
         status=1,
@@ -53,8 +54,8 @@ def fixture_sample_http_data() -> ListAllDevicesResponseDevice:
         userid=None,
         icon=None,
         groupName="Test Group",
-        groupId=1,
-        creator="creator123",
+        groupId=UUID("222d614d-36d8-443a-988f-868ecf80e078"),
+        creator=UUID("01e63611-fa7c-48fb-9c9a-332fae881057"),
         createTime="2023-01-01 12:00:00",
         updateTime="2023-01-02 12:00:00",
         appNotiEnable=False,
@@ -111,7 +112,7 @@ def test_device_initialization(mock_mqtt_client: MagicMock, sample_http_data: Li
     device = Device(mock_mqtt_client, sample_http_data)
 
     # Check HTTP data mapping
-    assert device.id == "device123"
+    assert device.id == UUID("5202cb6e-8d4f-406d-ad39-f49f82760b39")
     assert device.brand == "Aquatlantis"
     assert device.name == "Test Device"
     assert device.status == 1
@@ -123,8 +124,8 @@ def test_device_initialization(mock_mqtt_client: MagicMock, sample_http_data: Li
     assert device.ip == "192.168.1.100"
     assert device.port == 8080
     assert device.group_name == "Test Group"
-    assert device.group_id == 1
-    assert device.creator == "creator123"
+    assert device.group_id == UUID("222d614d-36d8-443a-988f-868ecf80e078")
+    assert device.creator == UUID("01e63611-fa7c-48fb-9c9a-332fae881057")
 
     # Check datetime conversions
     assert device.online_time is not None
@@ -149,7 +150,7 @@ def test_update_http_data(mock_mqtt_client: MagicMock, sample_http_data: ListAll
 
     # Update with new data
     new_data = ListAllDevicesResponseDevice(
-        id="device456",
+        id=UUID("5202cb6e-8d4f-406d-ad39-f49f82760b39"),
         brand="NewBrand",
         name="New Device",
         status=0,
@@ -174,8 +175,8 @@ def test_update_http_data(mock_mqtt_client: MagicMock, sample_http_data: ListAll
         userid=None,
         icon=None,
         groupName="New Group",
-        groupId=2,
-        creator="newcreator",
+        groupId=UUID("222d614d-36d8-443a-988f-868ecf80e078"),
+        creator=UUID("01e63611-fa7c-48fb-9c9a-332fae881057"),
         createTime="2023-02-01 12:00:00",
         updateTime="2023-02-02 12:00:00",
         appNotiEnable=True,
@@ -187,7 +188,7 @@ def test_update_http_data(mock_mqtt_client: MagicMock, sample_http_data: ListAll
 
     device.update_http_data(new_data)
 
-    assert device.id == "device456"
+    assert device.id == UUID("5202cb6e-8d4f-406d-ad39-f49f82760b39")
     assert device.brand == "NewBrand"
     assert device.name == "New Device"
     assert device.status == StatusType.OFFLINE
@@ -253,7 +254,7 @@ def test_force_update(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevi
     call_args = mock_mqtt_client.publish.call_args
     topic, payload = call_args[0]
 
-    assert topic == "$username/Aquatlantis&testpkey&testdevid/reqfrom/creator123"
+    assert topic == "$username/Aquatlantis&testpkey&testdevid/reqfrom/01e63611-fa7c-48fb-9c9a-332fae881057"
     assert payload.id == "randomid123"
     assert payload.brand == "Aquatlantis"
     assert payload.devid == "testdevid"
@@ -575,7 +576,7 @@ def test_update_status_restored(mock_mqtt_client: MagicMock, sample_http_data: L
     call_args = mock_mqtt_client.publish.call_args
     topic, payload = call_args[0]
 
-    assert topic == "$username/Aquatlantis&testpkey&testdevid/reqfrom/creator123"
+    assert topic == "$username/Aquatlantis&testpkey&testdevid/reqfrom/01e63611-fa7c-48fb-9c9a-332fae881057"
     assert payload.id == "randomid123"
     assert payload.brand == "Aquatlantis"
     assert payload.devid == "testdevid"

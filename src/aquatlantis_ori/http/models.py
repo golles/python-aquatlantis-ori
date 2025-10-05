@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+from uuid import UUID
 
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
@@ -70,7 +71,7 @@ class ListAllDevicesResponseData(DataClassORJSONMixin):
 class ListAllDevicesResponseDevice(DataClassORJSONMixin):
     """List all devices response device model."""
 
-    id: str
+    id: UUID
     brand: str
     name: str
     status: int
@@ -95,8 +96,8 @@ class ListAllDevicesResponseDevice(DataClassORJSONMixin):
     userid: str | None
     icon: str | None
     groupName: str | None
-    groupId: int | None
-    creator: str
+    groupId: UUID | None
+    creator: UUID
     createTime: str | None
     updateTime: str | None
     appNotiEnable: bool
