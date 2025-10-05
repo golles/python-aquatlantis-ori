@@ -4,6 +4,7 @@ import logging
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any, Self
+from uuid import UUID
 
 from aquatlantis_ori.helpers import (
     datetime_str_to_datetime,
@@ -44,7 +45,7 @@ class Device:
     status: StatusType  # Device status
 
     # Variables from HTTP response
-    id: str  # Unique identifier for the device
+    id: UUID  # Unique identifier for the device
     brand: str  # Device brand, Aquatlantis
     name: str  # Device name
     pkey: str  # Device product key
@@ -58,8 +59,8 @@ class Device:
     offline_time: datetime | None = None  # Time when the device was last offline
     offline_reason: str | None = None  # Reason for the device being offline, if applicable
     group_name: str | None = None  # Name of the group the device belongs to
-    group_id: int | None = None  # Group ID the device belongs to
-    creator: str  # Creator of the device, uuid
+    group_id: UUID | None = None  # Group ID the device belongs to
+    creator: UUID  # Creator of the device
     create_time: datetime | None = None  # Time when the device was created
     update_time: datetime | None = None  # Time when the device was last updated
     app_notifications: bool  # Whether app notifications are enabled

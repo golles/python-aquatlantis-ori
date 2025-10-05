@@ -4,6 +4,7 @@
 from collections.abc import Generator
 from json import JSONDecodeError
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import UUID
 
 import pytest
 from aiohttp.client import ClientError, ClientResponse, ClientResponseError, ClientSession
@@ -93,7 +94,7 @@ async def test_list_all_devices(monkeypatch: pytest.MonkeyPatch, mock_session: C
     client = AquatlantisOriHTTPClient(session=mock_session)
     client._token = "token"  # noqa: S105,
     device = ListAllDevicesResponseDevice(
-        id="1",
+        id=UUID("5202cb6e-8d4f-406d-ad39-f49f82760b39"),
         brand="Aquatlantis",
         name="dev",
         status=1,
@@ -119,7 +120,7 @@ async def test_list_all_devices(monkeypatch: pytest.MonkeyPatch, mock_session: C
         icon=None,
         groupName=None,
         groupId=None,
-        creator="cr",
+        creator=UUID("01e63611-fa7c-48fb-9c9a-332fae881057"),
         createTime=None,
         updateTime=None,
         appNotiEnable=True,
@@ -136,7 +137,7 @@ async def test_list_all_devices(monkeypatch: pytest.MonkeyPatch, mock_session: C
     result = await client.list_all_devices()
     assert isinstance(result, ListAllDevicesResponse)
     assert result.data
-    assert result.data.devices[0].id == "1"
+    assert result.data.devices[0].id == UUID("5202cb6e-8d4f-406d-ad39-f49f82760b39")
 
 
 async def test_device_info(monkeypatch: pytest.MonkeyPatch, mock_session: ClientSession) -> None:
@@ -144,7 +145,7 @@ async def test_device_info(monkeypatch: pytest.MonkeyPatch, mock_session: Client
     client = AquatlantisOriHTTPClient(session=mock_session)
     client._token = "token"  # noqa: S105
     device = ListAllDevicesResponseDevice(
-        id="1",
+        id=UUID("5202cb6e-8d4f-406d-ad39-f49f82760b39"),
         brand="Aquatlantis",
         name="dev",
         status=1,
@@ -170,7 +171,7 @@ async def test_device_info(monkeypatch: pytest.MonkeyPatch, mock_session: Client
         icon=None,
         groupName=None,
         groupId=None,
-        creator="cr",
+        creator=UUID("01e63611-fa7c-48fb-9c9a-332fae881057"),
         createTime=None,
         updateTime=None,
         appNotiEnable=True,
@@ -185,7 +186,7 @@ async def test_device_info(monkeypatch: pytest.MonkeyPatch, mock_session: Client
     monkeypatch.setattr(client, "_deserialize", AsyncMock(return_value=response))
     result = await client.device_info("1")
     assert isinstance(result, DeviceInfoResponse)
-    assert result.data.id == "1"
+    assert result.data.id == UUID("5202cb6e-8d4f-406d-ad39-f49f82760b39")
 
 
 async def test_lastest_firmware(monkeypatch: pytest.MonkeyPatch, mock_session: ClientSession) -> None:
