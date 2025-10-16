@@ -13,7 +13,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
@@ -54,7 +54,7 @@ source = ["aquatlantis_ori"]
 packages = ["src/aquatlantis_ori"]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 
 [tool.pylint]
 max-line-length=150
