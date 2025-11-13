@@ -1,6 +1,6 @@
 {
   "name": "Python Aquatlantis Ori",
-  "image": "mcr.microsoft.com/devcontainers/python:3.14-trixie",
+  "image": "mcr.microsoft.com/devcontainers/python:3.14",
   "postCreateCommand": "./scripts/setup_env.sh --devcontainer",
   "customizations": {
     "codespaces": {
