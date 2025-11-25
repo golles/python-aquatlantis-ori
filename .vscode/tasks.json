@@ -14,12 +14,6 @@
       "problemMatcher": []
     },
     {
-      "label": "Run all examples",
-      "type": "shell",
-      "command": "find examples -type f -name \"*.py\" -exec uv run {} \\;",
-      "problemMatcher": []
-    },
-    {
       "label": "Run CI checks",
       "type": "shell",
       "command": "uv run ./scripts/local_ci_checks.sh",
@@ -29,12 +23,6 @@
       "label": "Run tests",
       "type": "shell",
       "command": "uv run pytest",
-      "problemMatcher": []
-    },
-    {
-      "label": "Sort all models.py files",
-      "type": "shell",
-      "command": "find src -name models.py -exec uv run scripts/sort_models.py {} \\;",
       "problemMatcher": []
     }
   ]
