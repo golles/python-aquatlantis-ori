@@ -1,6 +1,7 @@
 """Asynchronous Python client for Aquatlantis Ori Smart Controller."""
 
 from .client import AquatlantisOriClient
+from .const import MQTT_AVAILABILITY_FRESHNESS_WINDOW
 from .device import Device
 from .exceptions import AquatlantisOriError
 from .http.exceptions import (
@@ -10,6 +11,7 @@ from .http.exceptions import (
     AquatlantisOriTimeoutError,
 )
 from .models import (
+    AvailabilityType,
     DynamicModeType,
     LightOptions,
     LightType,
@@ -23,12 +25,14 @@ from .models import (
 )
 
 __all__ = [
+    "MQTT_AVAILABILITY_FRESHNESS_WINDOW",
     "AquatlantisOriClient",
     "AquatlantisOriConnectionError",
     "AquatlantisOriDeserializeError",
     "AquatlantisOriError",
     "AquatlantisOriLoginError",
     "AquatlantisOriTimeoutError",
+    "AvailabilityType",
     "Device",
     "DynamicModeType",
     "LightOptions",
