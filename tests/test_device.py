@@ -329,6 +329,25 @@ def test_availability_state_expires_without_recent_mqtt_activity(
 
 
 @patch("aquatlantis_ori.device.datetime")
+def test_availability_state_tolerates_slightly_delayed_periodic_telemetry(
+    mock_datetime: MagicMock,
+    mock_mqtt_client: MagicMock,
+    sample_http_data: ListAllDevicesResponseDevice,
+    sample_mqtt_data: MQTTRetrievePayloadParam,
+) -> None:
+    """Test that small telemetry delays do not briefly mark the device unavailable."""
+    device = Device(mock_mqtt_client, sample_http_data)
+
+    seen_at = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = seen_at
+    device.update_mqtt_data(sample_mqtt_data)
+
+    mock_datetime.now.return_value = seen_at + timedelta(seconds=305)
+
+    assert device.availability_state == AvailabilityType.AVAILABLE
+
+
+@patch("aquatlantis_ori.device.datetime")
 def test_update_http_data_does_not_override_fresh_telemetry_availability(
     mock_datetime: MagicMock,
     mock_mqtt_client: MagicMock,
