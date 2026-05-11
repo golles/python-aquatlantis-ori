@@ -13,6 +13,14 @@ class StatusType(IntEnum):
     ONLINE = 1
 
 
+class AvailabilityType(IntEnum):
+    """Derived device availability types."""
+
+    UNKNOWN = 0
+    UNAVAILABLE = 1
+    AVAILABLE = 2
+
+
 class DynamicModeType(IntEnum):
     """Dynamic mode types, also known as lightning effect."""
 

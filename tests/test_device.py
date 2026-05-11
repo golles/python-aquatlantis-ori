@@ -1,16 +1,17 @@
 """Device tests."""
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-many-lines
 
 from collections.abc import Generator
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 from uuid import UUID
 
 import pytest
 
+from aquatlantis_ori.const import MQTT_AVAILABILITY_FRESHNESS_WINDOW
 from aquatlantis_ori.device import Device
 from aquatlantis_ori.http.models import LatestFirmwareResponseData, ListAllDevicesResponseDevice
-from aquatlantis_ori.models import DynamicModeType, LightOptions, ModeType, PowerType, StatusType, Threshold, TimeCurve
+from aquatlantis_ori.models import AvailabilityType, DynamicModeType, LightOptions, ModeType, PowerType, StatusType, Threshold, TimeCurve
 from aquatlantis_ori.mqtt.client import AquatlantisOriMQTTClient
 from aquatlantis_ori.mqtt.models import MethodType, MQTTRetrievePayloadParam, PropsType, StatusPayload
 
@@ -240,6 +241,132 @@ def test_update_mqtt_data(
         assert device.timecurve[1].hour == 18
         assert device.timecurve[1].minute == 30
         assert device.timecurve[1].intensity == 80
+
+
+def test_availability_state_is_unknown_without_mqtt_activity(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
+    """Test availability state before any MQTT activity is observed."""
+    device = Device(mock_mqtt_client, sample_http_data)
+
+    assert device.last_seen_at is None
+    assert device.availability_state == AvailabilityType.UNKNOWN
+
+
+@patch("aquatlantis_ori.device.datetime")
+def test_availability_state_uses_fresh_telemetry_when_http_status_is_offline(
+    mock_datetime: MagicMock,
+    mock_mqtt_client: MagicMock,
+    sample_http_data: ListAllDevicesResponseDevice,
+    sample_mqtt_data: MQTTRetrievePayloadParam,
+) -> None:
+    """Test telemetry-derived availability when HTTP status is stale offline."""
+    sample_http_data.status = StatusType.OFFLINE
+    device = Device(mock_mqtt_client, sample_http_data)
+
+    seen_at = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = seen_at
+
+    device.update_mqtt_data(sample_mqtt_data)
+
+    assert device.status == StatusType.OFFLINE
+    assert device.last_seen_at == seen_at
+    assert device.availability_state == AvailabilityType.AVAILABLE
+
+
+@patch("aquatlantis_ori.device.datetime")
+def test_availability_state_uses_explicit_offline_status(
+    mock_datetime: MagicMock,
+    mock_mqtt_client: MagicMock,
+    sample_http_data: ListAllDevicesResponseDevice,
+    sample_mqtt_data: MQTTRetrievePayloadParam,
+) -> None:
+    """Test that a fresh explicit offline status overrides prior telemetry."""
+    device = Device(mock_mqtt_client, sample_http_data)
+
+    telemetry_at = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = telemetry_at
+    device.update_mqtt_data(sample_mqtt_data)
+
+    offline_at = datetime(2026, 1, 1, 12, 1, tzinfo=UTC)
+    mock_datetime.now.return_value = offline_at
+    status_data = StatusPayload(
+        username="testuser",
+        timestamp=1752702401491,
+        status=StatusType.OFFLINE,
+        reason="keepalive_timeout",
+        port=8080,
+        pkey="testpkey",
+        ip="192.168.1.100",
+        devid="testdevid",
+        clientid="client123",
+        brand="Aquatlantis",
+        app=0,
+    )
+
+    device.update_status(status_data)
+
+    assert device.status == StatusType.OFFLINE
+    assert device.last_seen_at == offline_at
+    assert device.availability_state == AvailabilityType.UNAVAILABLE
+
+
+@patch("aquatlantis_ori.device.datetime")
+def test_availability_state_expires_without_recent_mqtt_activity(
+    mock_datetime: MagicMock,
+    mock_mqtt_client: MagicMock,
+    sample_http_data: ListAllDevicesResponseDevice,
+    sample_mqtt_data: MQTTRetrievePayloadParam,
+) -> None:
+    """Test availability expiration after the freshness window elapses."""
+    device = Device(mock_mqtt_client, sample_http_data)
+
+    seen_at = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = seen_at
+    device.update_mqtt_data(sample_mqtt_data)
+
+    mock_datetime.now.return_value = seen_at + MQTT_AVAILABILITY_FRESHNESS_WINDOW + timedelta(seconds=1)
+
+    assert device.availability_state == AvailabilityType.UNAVAILABLE
+
+
+@patch("aquatlantis_ori.device.datetime")
+def test_availability_state_tolerates_slightly_delayed_periodic_telemetry(
+    mock_datetime: MagicMock,
+    mock_mqtt_client: MagicMock,
+    sample_http_data: ListAllDevicesResponseDevice,
+    sample_mqtt_data: MQTTRetrievePayloadParam,
+) -> None:
+    """Test that small telemetry delays do not briefly mark the device unavailable."""
+    device = Device(mock_mqtt_client, sample_http_data)
+
+    seen_at = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = seen_at
+    device.update_mqtt_data(sample_mqtt_data)
+
+    mock_datetime.now.return_value = seen_at + timedelta(seconds=305)
+
+    assert device.availability_state == AvailabilityType.AVAILABLE
+
+
+@patch("aquatlantis_ori.device.datetime")
+def test_update_http_data_does_not_override_fresh_telemetry_availability(
+    mock_datetime: MagicMock,
+    mock_mqtt_client: MagicMock,
+    sample_http_data: ListAllDevicesResponseDevice,
+    sample_mqtt_data: MQTTRetrievePayloadParam,
+) -> None:
+    """Test that stale HTTP status does not replace fresh telemetry-derived availability."""
+    sample_http_data.status = StatusType.OFFLINE
+    device = Device(mock_mqtt_client, sample_http_data)
+
+    seen_at = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = seen_at
+    device.update_mqtt_data(sample_mqtt_data)
+
+    sample_http_data.status = StatusType.OFFLINE
+    device.update_http_data(sample_http_data)
+
+    assert device.status == StatusType.OFFLINE
+    assert device.availability_state == AvailabilityType.AVAILABLE
 
 
 @pytest.mark.usefixtures("mock_random_id")
@@ -549,10 +676,14 @@ def test_update_status(mock_mqtt_client: MagicMock, sample_http_data: ListAllDev
 
 
 @pytest.mark.usefixtures("mock_random_id")
-def test_update_status_restored(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
+@patch("aquatlantis_ori.device.datetime")
+def test_update_status_restored(mock_datetime: MagicMock, mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
     """Test updating device status from offline to online, force update should be called."""
     device = Device(mock_mqtt_client, sample_http_data)
     device.status = StatusType.OFFLINE
+
+    restored_at = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = restored_at
 
     status_data = StatusPayload(
         username="testuser",
@@ -570,6 +701,8 @@ def test_update_status_restored(mock_mqtt_client: MagicMock, sample_http_data: L
 
     device.update_status(status_data)
     assert device.status == StatusType.ONLINE
+    assert device.last_seen_at == restored_at
+    assert device.availability_state == AvailabilityType.AVAILABLE
 
     # verify that force_update was called
     assert mock_mqtt_client.publish.call_count == 2

@@ -1,16 +1,20 @@
 """Client tests."""
-# pylint: disable=protected-access
+# pylint: disable=protected-access,duplicate-code
 
 import asyncio
 from collections.abc import Generator
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import UUID
 
 import pytest
 from _pytest.logging import LogCaptureFixture
 
 from aquatlantis_ori.client import AquatlantisOriClient
-from aquatlantis_ori.http.models import UserLoginResponseData
-from aquatlantis_ori.mqtt.models import MQTTRetrievePayloadParam
+from aquatlantis_ori.device import Device
+from aquatlantis_ori.http.models import ListAllDevicesResponseDevice, UserLoginResponseData
+from aquatlantis_ori.models import AvailabilityType, StatusType
+from aquatlantis_ori.mqtt.models import MQTTRetrievePayloadParam, StatusPayload
 
 
 @pytest.fixture(name="mock_http_client")
@@ -181,6 +185,110 @@ def test_update_device_status_calls_update_mqtt_data(client: AquatlantisOriClien
         client._update_device_status("dev1", data)
 
     device.update_status.assert_called_once_with(data)
+
+
+@patch("aquatlantis_ori.device.datetime")
+def test_update_device_handlers_drive_availability_state(mock_datetime: MagicMock, client: AquatlantisOriClient) -> None:
+    """Test that client device handlers can drive derived availability transitions."""
+    mqtt_client = MagicMock()
+    mqtt_client.is_connected.return_value = True
+
+    device = Device(
+        mqtt_client,
+        ListAllDevicesResponseDevice(
+            id=UUID("5202cb6e-8d4f-406d-ad39-f49f82760b39"),
+            brand="Aquatlantis",
+            name="Test Device",
+            status=StatusType.OFFLINE,
+            picture=None,
+            pkey="testpkey",
+            pid=0,
+            subid=0,
+            devid="testdevid",
+            mac="00:11:22:33:44:55",
+            bluetoothMac="00:11:22:33:44:66",
+            extend=None,
+            param=None,
+            version=None,
+            enable=True,
+            clientid="client123",
+            username="testuser",
+            ip="192.168.1.100",
+            port=8080,
+            onlineTime="1719400000000",
+            offlineTime="1719500000000",
+            offlineReason=None,
+            userid=None,
+            icon=None,
+            groupName="Test Group",
+            groupId=UUID("222d614d-36d8-443a-988f-868ecf80e078"),
+            creator=UUID("01e63611-fa7c-48fb-9c9a-332fae881057"),
+            createTime="2023-01-01 12:00:00",
+            updateTime="2023-01-02 12:00:00",
+            appNotiEnable=False,
+            emailNotiEnable=False,
+            notiEmail=None,
+            isShow=None,
+            bindDevices=[],
+        ),
+    )
+
+    telemetry_at = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = telemetry_at
+    telemetry = MQTTRetrievePayloadParam(
+        timeoffset=None,
+        rssi=None,
+        device_time=None,
+        version=None,
+        ssid=None,
+        ip=None,
+        intensity=50,
+        custom1=None,
+        custom2=None,
+        custom3=None,
+        custom4=None,
+        timecurve=None,
+        preview=None,
+        light_type=None,
+        dynamic_mode=None,
+        mode=None,
+        power=None,
+        sensor_type=None,
+        water_temp=None,
+        sensor_valid=None,
+        water_temp_thrd=None,
+        air_temp_thrd=None,
+        air_humi_thrd=None,
+        ch1brt=None,
+        ch2brt=None,
+        ch3brt=None,
+        ch4brt=None,
+    )
+
+    with patch.object(client, "get_device", return_value=device):
+        client._update_device_state("testdevid", telemetry)
+        assert device.availability_state == AvailabilityType.AVAILABLE
+
+        offline_at = datetime(2026, 1, 1, 12, 1, tzinfo=UTC)
+        mock_datetime.now.return_value = offline_at
+        client._update_device_status(
+            "testdevid",
+            StatusPayload(
+                username="testuser",
+                timestamp=1752702401491,
+                status=StatusType.OFFLINE,
+                reason="keepalive_timeout",
+                port=8080,
+                pkey="testpkey",
+                ip="192.168.1.100",
+                devid="testdevid",
+                clientid="client123",
+                brand="Aquatlantis",
+                app=0,
+            ),
+        )
+
+    assert device.availability_state == AvailabilityType.UNAVAILABLE
 
 
 def test_update_device_status_device_not_found(client: AquatlantisOriClient, caplog: LogCaptureFixture) -> None:
