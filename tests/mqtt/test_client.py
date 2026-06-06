@@ -82,6 +82,12 @@ def test_subscribe_calls_methods(mqtt_client: AquatlantisOriMQTTClient, mock_mqt
     mock_mqtt_client.subscribe.assert_called_once()
 
 
+def test_subscribe_tracks_topics(mqtt_client: AquatlantisOriMQTTClient) -> None:
+    """Test that subscribe stores topics for reconnects."""
+    mqtt_client.subscribe("topic")
+    assert mqtt_client._subscribed_topics == {"topic"}
+
+
 def test_publish_calls_publish(mqtt_client: AquatlantisOriMQTTClient, mock_mqtt_client: MagicMock) -> None:
     """Test that publish method calls the MQTT client's publish method."""
     payload = DummyPayload(value="dummy-json")
@@ -115,6 +121,24 @@ def test_on_connect_failure(client_settings: MQTTClientSettings) -> None:
     # Simulate failed connect
     client._on_connect(client._client, {}, MagicMock(), 1, None)
     assert not called
+
+
+def test_on_connect_resubscribes_to_known_topics(
+    client_settings: MQTTClientSettings,
+    mock_mqtt_client: MagicMock,
+) -> None:
+    """Test that reconnecting re-subscribes to known topics."""
+    client = AquatlantisOriMQTTClient(client_settings)
+    client.subscribe("topic/a")
+    client.subscribe("topic/b")
+
+    mock_mqtt_client.subscribe.reset_mock()
+
+    client._on_connect(client._client, {}, MagicMock(), 0, None)
+
+    mock_mqtt_client.subscribe.assert_any_call("topic/a")
+    mock_mqtt_client.subscribe.assert_any_call("topic/b")
+    assert mock_mqtt_client.subscribe.call_count == 2
 
 
 def test_on_disconnect_expected(mqtt_client: AquatlantisOriMQTTClient, mock_mqtt_client: MagicMock, caplog: LogCaptureFixture) -> None:

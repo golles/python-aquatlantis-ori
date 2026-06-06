@@ -10,6 +10,7 @@ from .http.exceptions import (
     AquatlantisOriTimeoutError,
 )
 from .models import (
+    AvailabilityType,
     DynamicModeType,
     LightOptions,
     LightType,
@@ -29,6 +30,7 @@ __all__ = [
     "AquatlantisOriError",
     "AquatlantisOriLoginError",
     "AquatlantisOriTimeoutError",
+    "AvailabilityType",
     "Device",
     "DynamicModeType",
     "LightOptions",

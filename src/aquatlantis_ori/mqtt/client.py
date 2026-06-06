@@ -21,6 +21,7 @@ class AquatlantisOriMQTTClient:
     _client_settings: MQTTClientSettings
     _on_client_connect: Callable[[], None] | None
     _on_client_message: Callable[[mqtt.MQTTMessage], None] | None
+    _subscribed_topics: set[str]
 
     def __init__(
         self: Self,
@@ -33,6 +34,7 @@ class AquatlantisOriMQTTClient:
         self._client_settings = client_settings
         self._on_client_connect = on_connect
         self._on_client_message = on_message
+        self._subscribed_topics = set()
 
         self._client.on_connect = self._on_connect
         self._client.on_disconnect = self._on_disconnect
@@ -58,6 +60,11 @@ class AquatlantisOriMQTTClient:
 
     def subscribe(self: Self, topic: str) -> None:
         """Subscribe to a specific topic."""
+        self._subscribed_topics.add(topic)
+        self._subscribe_to_topic(topic)
+
+    def _subscribe_to_topic(self: Self, topic: str) -> None:
+        """Subscribe to a topic on the underlying MQTT client."""
         logger.info("Subscribing to topic %s", topic)
         self._client.subscribe(topic)
 
@@ -78,6 +85,9 @@ class AquatlantisOriMQTTClient:
         """Callback for when the MQTT client connects to the broker."""
         if rc == 0:
             logger.info("Connected successfully to MQTT broker.")
+
+            for topic in sorted(self._subscribed_topics):
+                self._subscribe_to_topic(topic)
 
             if self._on_client_connect is not None:
                 self._on_client_connect()

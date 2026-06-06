@@ -30,7 +30,7 @@ To use the Aquatlantis Ori client, you can import it in your Python scripts and 
 import asyncio
 import logging
 
-from aquatlantis_ori import AquatlantisOriClient, LightOptions, PowerType
+from aquatlantis_ori import AvailabilityType, AquatlantisOriClient, LightOptions, PowerType
 
 logging.basicConfig(level=logging.WARNING)
 logging.getLogger("aquatlantis_ori").setLevel(logging.INFO)
@@ -40,6 +40,9 @@ async def main() -> None:
     async with AquatlantisOriClient("email", "password") as client:
         await client.connect()
         device = client.get_devices()[0]
+
+        if device.availability_state is not AvailabilityType.AVAILABLE:
+            raise RuntimeError("Device is not currently available")
 
         scenarios: list[dict] = [
             {"power": PowerType.ON, "options": LightOptions(intensity=100, red=100, green=0, blue=0, white=0)},
@@ -67,6 +70,12 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+`device.status` remains the raw vendor-reported protocol value for diagnostics. Use `device.availability_state` as the canonical runtime liveness signal:
+
+- `AvailabilityType.UNKNOWN`: No MQTT liveness evidence has been observed yet.
+- `AvailabilityType.AVAILABLE`: Recent MQTT telemetry or an explicit online status proves the device is alive.
+- `AvailabilityType.UNAVAILABLE`: A fresh explicit offline status was received, or MQTT activity has gone stale.
 
 ## Contributing
 

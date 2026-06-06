@@ -3,9 +3,11 @@
 import logging
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 from typing import Any, Self
 from uuid import UUID
 
+from aquatlantis_ori.const import MQTT_AVAILABILITY_FRESHNESS_WINDOW
 from aquatlantis_ori.helpers import (
     datetime_str_to_datetime,
     float_from_tenths,
@@ -18,6 +20,7 @@ from aquatlantis_ori.helpers import (
 )
 from aquatlantis_ori.http.models import LatestFirmwareResponseData, ListAllDevicesResponseDevice
 from aquatlantis_ori.models import (
+    AvailabilityType,
     DynamicModeType,
     LightOptions,
     LightType,
@@ -35,11 +38,24 @@ from aquatlantis_ori.mqtt.models import MethodType, MQTTRetrievePayloadParam, MQ
 logger = logging.getLogger(__name__)
 
 
-class Device:
-    """Aquatlantis Ori Device."""
+class _MQTTActivitySource(StrEnum):
+    """MQTT message types that provide liveness evidence."""
+
+    STATUS = "status"
+    TELEMETRY = "telemetry"
+
+
+class Device:  # pylint: disable=too-many-instance-attributes
+    """Aquatlantis Ori Device.
+
+    Raw ``status`` reflects the vendor-reported protocol state. Use
+    ``availability_state`` as the canonical runtime availability signal.
+    """
 
     _mqtt_client: AquatlantisOriMQTTClient
+    _last_mqtt_activity_source: _MQTTActivitySource | None = None
     has_received_data: bool = False  # Indicates if the device has received
+    last_seen_at: datetime | None = None  # Time of the most recent inbound MQTT activity
 
     # Variables from HTTP and MQTT response
     status: StatusType  # Device status
@@ -162,6 +178,8 @@ class Device:
 
     def update_mqtt_data(self: Self, data: MQTTRetrievePayloadParam) -> None:
         """Update the device state from MQTT data."""
+        self._mark_mqtt_activity(_MQTTActivitySource.TELEMETRY)
+
         field_map: dict[str, Callable[[Any], Any]] = {
             "timeoffset": lambda v: v,
             "rssi": lambda v: v,
@@ -217,6 +235,7 @@ class Device:
 
     def update_status(self: Self, data: StatusPayload) -> None:
         """Update the status of the device."""
+        self._mark_mqtt_activity(_MQTTActivitySource.STATUS)
         logger.debug("%s setting status to %s", self.devid, data.status)
         restored = self.status == StatusType.OFFLINE and data.status == StatusType.ONLINE
         self.status = StatusType(data.status)
@@ -224,6 +243,23 @@ class Device:
         if restored:
             logger.info("%s restored came back online", self.devid)
             self.force_update()
+
+    @property
+    def availability_state(self: Self) -> AvailabilityType:
+        """Return the canonical runtime availability derived from MQTT activity."""
+        if self.last_seen_at is None or self._last_mqtt_activity_source is None:
+            return AvailabilityType.UNKNOWN
+
+        if datetime.now(tz=UTC) - self.last_seen_at > MQTT_AVAILABILITY_FRESHNESS_WINDOW:
+            return AvailabilityType.UNAVAILABLE
+
+        if self._last_mqtt_activity_source == _MQTTActivitySource.TELEMETRY:
+            return AvailabilityType.AVAILABLE
+
+        if self.status == StatusType.ONLINE:
+            return AvailabilityType.AVAILABLE
+
+        return AvailabilityType.UNAVAILABLE
 
     def update_firmware_data(self: Self, data: LatestFirmwareResponseData) -> None:
         """Update the device firmware data from HTTP response."""
@@ -241,6 +277,11 @@ class Device:
             MethodType.PROPERTY_GET,
             MQTTSendPayloadParam(props=list(PropsType)),
         )
+
+    def _mark_mqtt_activity(self: Self, source: _MQTTActivitySource) -> None:
+        """Record the latest inbound MQTT activity used for availability."""
+        self.last_seen_at = datetime.now(tz=UTC)
+        self._last_mqtt_activity_source = source
 
     def _publish(self: Self, topic: str, method: MethodType, params: MQTTSendPayloadParam) -> None:
         """Publish the device state to MQTT."""

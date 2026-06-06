@@ -3,14 +3,17 @@
 
 import asyncio
 from collections.abc import Generator
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from _pytest.logging import LogCaptureFixture
 
 from aquatlantis_ori.client import AquatlantisOriClient
-from aquatlantis_ori.http.models import UserLoginResponseData
-from aquatlantis_ori.mqtt.models import MQTTRetrievePayloadParam
+from aquatlantis_ori.device import Device
+from aquatlantis_ori.http.models import ListAllDevicesResponseDevice, UserLoginResponseData
+from aquatlantis_ori.models import AvailabilityType, StatusType
+from aquatlantis_ori.mqtt.models import MQTTRetrievePayloadParam, StatusPayload
 
 
 @pytest.fixture(name="mock_http_client")
@@ -181,6 +184,35 @@ def test_update_device_status_calls_update_mqtt_data(client: AquatlantisOriClien
         client._update_device_status("dev1", data)
 
     device.update_status.assert_called_once_with(data)
+
+
+@patch("aquatlantis_ori.device.datetime")
+def test_update_device_handlers_drive_availability_state(
+    mock_datetime: MagicMock,
+    client: AquatlantisOriClient,
+    sample_http_data: ListAllDevicesResponseDevice,
+    sample_mqtt_data: MQTTRetrievePayloadParam,
+    sample_offline_status_payload: StatusPayload,
+) -> None:
+    """Test that client device handlers can drive derived availability transitions."""
+    mqtt_client = MagicMock()
+    mqtt_client.is_connected.return_value = True
+
+    sample_http_data.status = StatusType.OFFLINE
+    device = Device(mqtt_client, sample_http_data)
+
+    telemetry_at = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+    mock_datetime.now.return_value = telemetry_at
+
+    with patch.object(client, "get_device", return_value=device):
+        client._update_device_state("testdevid", sample_mqtt_data)
+        assert device.availability_state == AvailabilityType.AVAILABLE
+
+        offline_at = datetime(2026, 1, 1, 12, 1, tzinfo=UTC)
+        mock_datetime.now.return_value = offline_at
+        client._update_device_status("testdevid", sample_offline_status_payload)
+
+    assert device.availability_state == AvailabilityType.UNAVAILABLE
 
 
 def test_update_device_status_device_not_found(client: AquatlantisOriClient, caplog: LogCaptureFixture) -> None:
