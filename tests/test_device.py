@@ -26,81 +26,6 @@ def fixture_mock_mqtt_client() -> MagicMock:
     return client
 
 
-@pytest.fixture(name="sample_http_data")
-def fixture_sample_http_data() -> ListAllDevicesResponseDevice:
-    """Create sample HTTP device data."""
-    return ListAllDevicesResponseDevice(
-        id=UUID("5202cb6e-8d4f-406d-ad39-f49f82760b39"),
-        brand="Aquatlantis",
-        name="Test Device",
-        status=1,
-        picture=None,
-        pkey="testpkey",
-        pid=0,
-        subid=0,
-        devid="testdevid",
-        mac="00:11:22:33:44:55",
-        bluetoothMac="00:11:22:33:44:66",
-        extend=None,
-        param=None,
-        version=None,
-        enable=True,
-        clientid="client123",
-        username="testuser",
-        ip="192.168.1.100",
-        port=8080,
-        onlineTime="1719400000000",
-        offlineTime="1719500000000",
-        offlineReason=None,
-        userid=None,
-        icon=None,
-        groupName="Test Group",
-        groupId=UUID("222d614d-36d8-443a-988f-868ecf80e078"),
-        creator=UUID("01e63611-fa7c-48fb-9c9a-332fae881057"),
-        createTime="2023-01-01 12:00:00",
-        updateTime="2023-01-02 12:00:00",
-        appNotiEnable=False,
-        emailNotiEnable=False,
-        notiEmail=None,
-        isShow=None,
-        bindDevices=[],
-    )
-
-
-@pytest.fixture(name="sample_mqtt_data")
-def fixture_sample_mqtt_data() -> MQTTRetrievePayloadParam:
-    """Create sample MQTT device data."""
-    return MQTTRetrievePayloadParam(
-        timeoffset=3600,
-        rssi=-45,
-        device_time="1719400000000",
-        version="1.0.0",
-        ssid="TestWiFi",
-        ip="192.168.1.100",
-        intensity=80,
-        custom1=[75, 255, 128, 64, 200],
-        custom2=[50, 200, 100, 50, 150],
-        custom3=None,
-        custom4=None,
-        timecurve=[2, 8, 0, 50, 10, 20, 30, 40, 18, 30, 80, 60, 70, 80, 90],
-        preview=0,
-        light_type=1,
-        dynamic_mode=0,
-        mode=1,
-        power=1,
-        sensor_type=1,
-        water_temp=250,  # 25.0°C
-        sensor_valid=1,
-        water_temp_thrd=[200, 300],
-        air_temp_thrd=[150, 250],
-        air_humi_thrd=None,
-        ch1brt=10,
-        ch2brt=20,
-        ch3brt=30,
-        ch4brt=40,
-    )
-
-
 @pytest.fixture(name="mock_random_id")
 def fixture_mock_random_id() -> Generator[MagicMock]:
     """Mock the random_id function."""
@@ -278,6 +203,7 @@ def test_availability_state_uses_explicit_offline_status(
     mock_mqtt_client: MagicMock,
     sample_http_data: ListAllDevicesResponseDevice,
     sample_mqtt_data: MQTTRetrievePayloadParam,
+    sample_offline_status_payload: StatusPayload,
 ) -> None:
     """Test that a fresh explicit offline status overrides prior telemetry."""
     device = Device(mock_mqtt_client, sample_http_data)
@@ -288,21 +214,8 @@ def test_availability_state_uses_explicit_offline_status(
 
     offline_at = datetime(2026, 1, 1, 12, 1, tzinfo=UTC)
     mock_datetime.now.return_value = offline_at
-    status_data = StatusPayload(
-        username="testuser",
-        timestamp=1752702401491,
-        status=StatusType.OFFLINE,
-        reason="keepalive_timeout",
-        port=8080,
-        pkey="testpkey",
-        ip="192.168.1.100",
-        devid="testdevid",
-        clientid="client123",
-        brand="Aquatlantis",
-        app=0,
-    )
 
-    device.update_status(status_data)
+    device.update_status(sample_offline_status_payload)
 
     assert device.status == StatusType.OFFLINE
     assert device.last_seen_at == offline_at
@@ -652,32 +565,27 @@ def test_update_http_data_with_none_timestamps(mock_mqtt_client: MagicMock, samp
     assert device.update_time is None
 
 
-def test_update_status(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
+def test_update_status(
+    mock_mqtt_client: MagicMock,
+    sample_http_data: ListAllDevicesResponseDevice,
+    sample_offline_status_payload: StatusPayload,
+) -> None:
     """Test updating device status."""
     device = Device(mock_mqtt_client, sample_http_data)
     assert device.status == StatusType.ONLINE
 
-    status_data = StatusPayload(
-        username="testuser",
-        timestamp=1752702401491,
-        status=StatusType.OFFLINE,
-        reason="keepalive_timeout",
-        port=8080,
-        pkey="testpkey",
-        ip="192.168.1.100",
-        devid="testdevid",
-        clientid="client123",
-        brand="Aquatlantis",
-        app=0,
-    )
-
-    device.update_status(status_data)
+    device.update_status(sample_offline_status_payload)
     assert device.status == StatusType.OFFLINE
 
 
 @pytest.mark.usefixtures("mock_random_id")
 @patch("aquatlantis_ori.device.datetime")
-def test_update_status_restored(mock_datetime: MagicMock, mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
+def test_update_status_restored(
+    mock_datetime: MagicMock,
+    mock_mqtt_client: MagicMock,
+    sample_http_data: ListAllDevicesResponseDevice,
+    sample_online_status_payload: StatusPayload,
+) -> None:
     """Test updating device status from offline to online, force update should be called."""
     device = Device(mock_mqtt_client, sample_http_data)
     device.status = StatusType.OFFLINE
@@ -685,21 +593,7 @@ def test_update_status_restored(mock_datetime: MagicMock, mock_mqtt_client: Magi
     restored_at = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
     mock_datetime.now.return_value = restored_at
 
-    status_data = StatusPayload(
-        username="testuser",
-        timestamp=1752702401491,
-        status=StatusType.ONLINE,
-        reason=None,
-        port=8080,
-        pkey="testpkey",
-        ip="192.168.1.100",
-        devid="testdevid",
-        clientid="client123",
-        brand="Aquatlantis",
-        app=0,
-    )
-
-    device.update_status(status_data)
+    device.update_status(sample_online_status_payload)
     assert device.status == StatusType.ONLINE
     assert device.last_seen_at == restored_at
     assert device.availability_state == AvailabilityType.AVAILABLE
