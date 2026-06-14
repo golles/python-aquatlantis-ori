@@ -4,7 +4,7 @@ import logging
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import Any, Self
+from typing import Any, Final, Self
 from uuid import UUID
 
 from aquatlantis_ori.const import MQTT_AVAILABILITY_FRESHNESS_WINDOW
@@ -17,6 +17,7 @@ from aquatlantis_ori.helpers import (
     random_id,
     threshold_from_list,
     time_curves_from_list,
+    validate_range,
 )
 from aquatlantis_ori.http.models import LatestFirmwareResponseData, ListAllDevicesResponseDevice
 from aquatlantis_ori.models import (
@@ -36,6 +37,11 @@ from aquatlantis_ori.mqtt.client import AquatlantisOriMQTTClient
 from aquatlantis_ori.mqtt.models import MethodType, MQTTRetrievePayloadParam, MQTTSendPayload, MQTTSendPayloadParam, PropsType, StatusPayload
 
 logger = logging.getLogger(__name__)
+
+INTENSITY_MIN: Final = 0
+INTENSITY_MAX: Final = 100
+CHANNEL_MIN: Final = 0
+CHANNEL_MAX: Final = 100
 
 
 class _MQTTActivitySource(StrEnum):
@@ -84,7 +90,7 @@ class Device:  # pylint: disable=too-many-instance-attributes
     notification_email: str | None = None  # Email address for notifications, if enabled
 
     # Variables from MQTT response
-    timeoffset: int | None = None  # Time offset in seconds
+    timeoffset: int | None = None  # Time offset in minutes, relative to UTC
     rssi: int | None = None  # Signal strength in dBm
     device_time: datetime | None = None  # Device time in UTC
     version: str | None = None  # Firmware version of the device
@@ -369,6 +375,7 @@ class Device:  # pylint: disable=too-many-instance-attributes
 
     def set_intensity(self: Self, intensity: int) -> None:
         """Set the light intensity of the device."""
+        validate_range("intensity", intensity, INTENSITY_MIN, INTENSITY_MAX)
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
             MethodType.PROPERTY_SET,
@@ -377,6 +384,7 @@ class Device:  # pylint: disable=too-many-instance-attributes
 
     def set_red(self: Self, red: int) -> None:
         """Set the red color of the device."""
+        validate_range("red", red, CHANNEL_MIN, CHANNEL_MAX)
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
             MethodType.PROPERTY_SET,
@@ -385,6 +393,7 @@ class Device:  # pylint: disable=too-many-instance-attributes
 
     def set_green(self: Self, green: int) -> None:
         """Set the green color of the device."""
+        validate_range("green", green, CHANNEL_MIN, CHANNEL_MAX)
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
             MethodType.PROPERTY_SET,
@@ -393,6 +402,7 @@ class Device:  # pylint: disable=too-many-instance-attributes
 
     def set_blue(self: Self, blue: int) -> None:
         """Set the blue color of the device."""
+        validate_range("blue", blue, CHANNEL_MIN, CHANNEL_MAX)
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
             MethodType.PROPERTY_SET,
@@ -401,6 +411,7 @@ class Device:  # pylint: disable=too-many-instance-attributes
 
     def set_white(self: Self, white: int) -> None:
         """Set the white color of the device."""
+        validate_range("white", white, CHANNEL_MIN, CHANNEL_MAX)
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",
             MethodType.PROPERTY_SET,
@@ -420,15 +431,15 @@ class Device:  # pylint: disable=too-many-instance-attributes
 
         if options is not None:
             if options.intensity is not None:
-                params["intensity"] = options.intensity
+                params["intensity"] = validate_range("intensity", options.intensity, INTENSITY_MIN, INTENSITY_MAX)
             if options.red is not None:
-                params["ch1brt"] = options.red
+                params["ch1brt"] = validate_range("red", options.red, CHANNEL_MIN, CHANNEL_MAX)
             if options.green is not None:
-                params["ch2brt"] = options.green
+                params["ch2brt"] = validate_range("green", options.green, CHANNEL_MIN, CHANNEL_MAX)
             if options.blue is not None:
-                params["ch3brt"] = options.blue
+                params["ch3brt"] = validate_range("blue", options.blue, CHANNEL_MIN, CHANNEL_MAX)
             if options.white is not None:
-                params["ch4brt"] = options.white
+                params["ch4brt"] = validate_range("white", options.white, CHANNEL_MIN, CHANNEL_MAX)
 
         self._publish(
             f"$username/{self.brand}&{self.pkey}&{self.devid}/property/set",

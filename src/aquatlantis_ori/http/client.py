@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import socket
-from json import JSONDecodeError
 from types import TracebackType
 from typing import Self
 
@@ -43,6 +42,7 @@ class AquatlantisOriHTTPClient:
 
     def __init__(self: Self, session: ClientSession | None = None) -> None:
         """Initialize the Aquatlantis Ori HTTP client."""
+        self._token = None
         if session is None:
             self._session = ClientSession()
             self._close_session = True
@@ -100,7 +100,7 @@ class AquatlantisOriHTTPClient:
         )
         return await self._deserialize(response, DeviceInfoResponse)
 
-    async def lastest_firmware(self: Self, brand: str, pkey: str) -> LatestFirmwareResponse:
+    async def latest_firmware(self: Self, brand: str, pkey: str) -> LatestFirmwareResponse:
         """Get the latest firmware version for a given Aquatlantis Ori controller."""
         response = await self._request(
             method=HttpMethod.GET,
@@ -152,7 +152,9 @@ class AquatlantisOriHTTPClient:
         try:
             text = await response.text()
             return model.from_json(text)
-        except JSONDecodeError as exception:
+        except (ValueError, LookupError, TypeError) as exception:
+            # Covers malformed JSON (orjson.JSONDecodeError) and mashumaro schema errors
+            # (MissingField, InvalidFieldValue) raised on unexpected payloads.
             msg = "Failed to deserialize response"
             raise AquatlantisOriDeserializeError(msg) from exception
 

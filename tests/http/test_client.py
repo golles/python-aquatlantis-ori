@@ -186,10 +186,11 @@ async def test_device_info(monkeypatch: pytest.MonkeyPatch, mock_session: Client
     monkeypatch.setattr(client, "_deserialize", AsyncMock(return_value=response))
     result = await client.device_info("1")
     assert isinstance(result, DeviceInfoResponse)
+    assert result.data is not None
     assert result.data.id == UUID("5202cb6e-8d4f-406d-ad39-f49f82760b39")
 
 
-async def test_lastest_firmware(monkeypatch: pytest.MonkeyPatch, mock_session: ClientSession) -> None:
+async def test_latest_firmware(monkeypatch: pytest.MonkeyPatch, mock_session: ClientSession) -> None:
     """Test latest firmware retrieval."""
     client = AquatlantisOriHTTPClient(session=mock_session)
     client._token = "token"  # noqa: S105
@@ -200,7 +201,7 @@ async def test_lastest_firmware(monkeypatch: pytest.MonkeyPatch, mock_session: C
     mock_response = MagicMock(spec=ClientResponse)
     monkeypatch.setattr(client, "_request", AsyncMock(return_value=mock_response))
     monkeypatch.setattr(client, "_deserialize", AsyncMock(return_value=response))
-    result = await client.lastest_firmware("Aquatlantis", "p")
+    result = await client.latest_firmware("Aquatlantis", "p")
     assert isinstance(result, LatestFirmwareResponse)
     assert result.data
     assert result.data.id == "fw"

@@ -28,7 +28,7 @@ class AquatlantisOriReponse(DataClassORJSONMixin):
 class DeviceInfoResponse(AquatlantisOriReponse):
     """Device info response model."""
 
-    data: ListAllDevicesResponseDevice
+    data: ListAllDevicesResponseDevice | None
 
 
 @dataclass

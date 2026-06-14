@@ -30,7 +30,11 @@ class AquatlantisOriMQTTClient:
         on_message: Callable[[mqtt.MQTTMessage], None] | None = None,
     ) -> None:
         """Initialize the MQTT client."""
-        self._client = mqtt.Client(client_id=client_settings.client_id, protocol=mqtt.MQTTProtocolVersion.MQTTv5)
+        self._client = mqtt.Client(
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+            client_id=client_settings.client_id,
+            protocol=mqtt.MQTTProtocolVersion.MQTTv5,
+        )
         self._client_settings = client_settings
         self._on_client_connect = on_connect
         self._on_client_message = on_message
@@ -98,6 +102,7 @@ class AquatlantisOriMQTTClient:
         self,
         _client: mqtt.Client,
         _userdata: dict[str, Any],
+        _disconnect_flags: mqtt.DisconnectFlags,
         rc: mqtt.ReasonCode | int | None,
         _properties: mqtt.Properties | None,
     ) -> None:

@@ -54,15 +54,15 @@ def fixture_sample_http_data() -> ListAllDevicesResponseDevice:
 def fixture_sample_mqtt_data() -> MQTTRetrievePayloadParam:
     """Create sample MQTT device data."""
     return MQTTRetrievePayloadParam(
-        timeoffset=3600,
+        timeoffset=120,  # +2 hours
         rssi=-45,
         device_time="1719400000000",
         version="1.0.0",
         ssid="TestWiFi",
         ip="192.168.1.100",
         intensity=80,
-        custom1=[75, 255, 128, 64, 200],
-        custom2=[50, 200, 100, 50, 150],
+        custom1=[75, 95, 85, 64, 55],
+        custom2=[50, 70, 100, 50, 60],
         custom3=None,
         custom4=None,
         timecurve=[2, 8, 0, 50, 10, 20, 30, 40, 18, 30, 80, 60, 70, 80, 90],

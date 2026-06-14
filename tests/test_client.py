@@ -230,10 +230,15 @@ def test_update_device_status_device_not_found(client: AquatlantisOriClient, cap
 
 
 def test_on_mqtt_connected(client: AquatlantisOriClient, caplog: LogCaptureFixture) -> None:
-    """Test that _on_mqtt_connected logs info message."""
+    """Test that _on_mqtt_connected logs info message and re-issues force_update."""
+    device1 = MagicMock()
+    device2 = MagicMock()
+    client._devices = [device1, device2]
     with caplog.at_level("INFO"):
         client._on_mqtt_connected()
     assert "Connected to MQTT broker" in caplog.text
+    device1.force_update.assert_called_once_with()
+    device2.force_update.assert_called_once_with()
 
 
 def test_on_mqtt_message_sensor_post(client: AquatlantisOriClient) -> None:
@@ -276,6 +281,19 @@ def test_on_mqtt_message_respto(client: AquatlantisOriClient) -> None:
         client._on_mqtt_message(msg)
         from_json.assert_called_once_with("json")
         upd.assert_called_once_with("d", "p")
+
+
+def test_on_mqtt_message_malformed_payload_is_logged(client: AquatlantisOriClient, caplog: LogCaptureFixture) -> None:
+    """A malformed payload must be logged and not propagate out of the callback."""
+    msg = MagicMock()
+    msg.topic = "foo/property/post"
+    msg.payload.decode.return_value = "not-json"
+    with (
+        patch("aquatlantis_ori.mqtt.models.RetrievePayload.from_json", side_effect=ValueError("bad")),
+        caplog.at_level("ERROR"),
+    ):
+        client._on_mqtt_message(msg)
+    assert "Failed to process message" in caplog.text
 
 
 def test_on_mqtt_message_status(client: AquatlantisOriClient) -> None:
@@ -371,7 +389,7 @@ def test_check_firmware_updates(client: AquatlantisOriClient, mock_http_client: 
     firmware_data1 = MagicMock()
     firmware_data2 = MagicMock()
 
-    mock_http_client.lastest_firmware.side_effect = [
+    mock_http_client.latest_firmware.side_effect = [
         MagicMock(data=firmware_data1),
         MagicMock(data=firmware_data2),
     ]

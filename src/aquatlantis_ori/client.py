@@ -80,7 +80,7 @@ class AquatlantisOriClient:
     async def check_firmware_updates(self: Self) -> None:
         """Check for firmware updates for all devices."""
         for device in self._devices:
-            firmware_info = await self._http_client.lastest_firmware(device.brand, device.pkey)
+            firmware_info = await self._http_client.latest_firmware(device.brand, device.pkey)
             if firmware_info.data:
                 device.update_firmware_data(firmware_info.data)
 
@@ -153,25 +153,34 @@ class AquatlantisOriClient:
     def _on_mqtt_connected(self: Self) -> None:
         logger.info("Connected to MQTT broker")
 
+        # Request current state now the connection is up; force_update only publishes while
+        # connected, so requests made during device init are otherwise lost.
+        for device in self._devices:
+            device.force_update()
+
     def _on_mqtt_message(self, message: mqtt.MQTTMessage) -> None:
         """Callback for when a message is received from the MQTT broker."""
         logger.info("Received message on topic %s", message.topic)
 
-        if (
-            message.topic.endswith("/property/sensor/post")
-            or message.topic.endswith("/property/post")
-            or message.topic.endswith("/ota/version")
-            or "/respto/" in message.topic
-        ):
-            # The above topics are used for device state updates and share the same payload structure
-            payload = RetrievePayload.from_json(message.payload.decode("utf-8"))
-            self._update_device_state(payload.devid, payload.param)
-        elif message.topic.endswith("/status"):
-            status_payload = StatusPayload.from_json(message.payload.decode("utf-8"))
-            self._update_device_status(status_payload.devid, status_payload)
-        elif not ("/reqfrom/" in message.topic or "/ntp/" in message.topic or message.topic.endswith("/property/set")):
-            # Log unsupported topics
-            logger.debug("Received message on unsupported topic: %s with payload: %s", message.topic, message.payload.decode("utf-8"))
+        # Runs on paho's network thread: a malformed payload must not escape and break the loop.
+        try:
+            if (
+                message.topic.endswith("/property/sensor/post")
+                or message.topic.endswith("/property/post")
+                or message.topic.endswith("/ota/version")
+                or "/respto/" in message.topic
+            ):
+                # The above topics are used for device state updates and share the same payload structure
+                payload = RetrievePayload.from_json(message.payload.decode("utf-8"))
+                self._update_device_state(payload.devid, payload.param)
+            elif message.topic.endswith("/status"):
+                status_payload = StatusPayload.from_json(message.payload.decode("utf-8"))
+                self._update_device_status(status_payload.devid, status_payload)
+            elif not ("/reqfrom/" in message.topic or "/ntp/" in message.topic or message.topic.endswith("/property/set")):
+                # Log unsupported topics
+                logger.debug("Received message on unsupported topic: %s with payload: %s", message.topic, message.payload.decode("utf-8"))
+        except (ValueError, LookupError, TypeError, UnicodeDecodeError):
+            logger.exception("Failed to process message on topic %s", message.topic)
 
     async def close(self: Self) -> None:
         """Close client."""

@@ -130,14 +130,14 @@ def test_update_mqtt_data(
     device = Device(mock_mqtt_client, sample_http_data)
     device.update_mqtt_data(sample_mqtt_data)
 
-    assert device.timeoffset == 3600
+    assert device.timeoffset == 120
     assert device.rssi == -45
     assert device.version == "1.0.0"
     assert device.ssid == "TestWiFi"
     assert device.ip == "192.168.1.100"
     assert device.intensity == 80
-    assert device.custom1 == LightOptions(intensity=75, red=255, green=128, blue=64, white=200)
-    assert device.custom2 == LightOptions(intensity=50, red=200, green=100, blue=50, white=150)
+    assert device.custom1 == LightOptions(intensity=75, red=95, green=85, blue=64, white=55)
+    assert device.custom2 == LightOptions(intensity=50, red=70, green=100, blue=50, white=60)
     assert device.custom3 is None
     assert device.custom4 is None
     assert device.preview == 0
@@ -365,6 +365,40 @@ def test_set_intensity(mock_mqtt_client: MagicMock, sample_http_data: ListAllDev
     assert topic == "$username/Aquatlantis&testpkey&testdevid/property/set"
     assert payload.method == MethodType.PROPERTY_SET
     assert payload.param.intensity == 75
+
+
+def test_set_intensity_out_of_range_raises(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
+    """Out-of-range intensity is rejected and nothing is published."""
+    device = Device(mock_mqtt_client, sample_http_data)
+    mock_mqtt_client.reset_mock()
+
+    with pytest.raises(ValueError, match="intensity must be between 0 and 100"):
+        device.set_intensity(150)
+
+    mock_mqtt_client.publish.assert_not_called()
+
+
+@pytest.mark.parametrize("setter", ["set_red", "set_green", "set_blue", "set_white"])
+def test_set_channel_out_of_range_raises(setter: str, mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
+    """Out-of-range channel values are rejected and nothing is published."""
+    device = Device(mock_mqtt_client, sample_http_data)
+    mock_mqtt_client.reset_mock()
+
+    with pytest.raises(ValueError, match="must be between 0 and 100"):
+        getattr(device, setter)(150)
+
+    mock_mqtt_client.publish.assert_not_called()
+
+
+def test_set_light_out_of_range_raises(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
+    """set_light validates option values and publishes nothing when invalid."""
+    device = Device(mock_mqtt_client, sample_http_data)
+    mock_mqtt_client.reset_mock()
+
+    with pytest.raises(ValueError, match="red must be between 0 and 100"):
+        device.set_light(options=LightOptions(red=150))
+
+    mock_mqtt_client.publish.assert_not_called()
 
 
 def test_set_red(mock_mqtt_client: MagicMock, sample_http_data: ListAllDevicesResponseDevice) -> None:
@@ -786,7 +820,7 @@ def test_get_current_timecurve_with_negative_timezone_offset(
     mock_datetime.now.return_value = mock_now
 
     device = Device(mock_mqtt_client, sample_http_data)
-    device.timeoffset = -240  # -4 hours (US EST offset in seconds)
+    device.timeoffset = -240  # -4 hours
     device.timecurve = [
         TimeCurve(hour=8, minute=0, intensity=5, red=5, green=5, blue=5, white=5),
         TimeCurve(hour=12, minute=0, intensity=70, red=30, green=60, blue=80, white=60),

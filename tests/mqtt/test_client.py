@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from _pytest.logging import LogCaptureFixture
 from mashumaro.mixins.orjson import DataClassORJSONMixin
-from paho.mqtt.client import MQTTMessage
+from paho.mqtt.client import DisconnectFlags, MQTTMessage
 
 from aquatlantis_ori.mqtt.client import AquatlantisOriMQTTClient
 from aquatlantis_ori.mqtt.models import MQTTClientSettings
@@ -144,14 +144,14 @@ def test_on_connect_resubscribes_to_known_topics(
 def test_on_disconnect_expected(mqtt_client: AquatlantisOriMQTTClient, mock_mqtt_client: MagicMock, caplog: LogCaptureFixture) -> None:
     """Test that on_disconnect method logs expected messages."""
     with caplog.at_level("INFO"):
-        mqtt_client._on_disconnect(mock_mqtt_client, {}, 0, None)
+        mqtt_client._on_disconnect(mock_mqtt_client, {}, DisconnectFlags(is_disconnect_packet_from_server=False), 0, None)
     assert "Disconnected gracefully" in caplog.text
 
 
 def test_on_disconnect_unexpected(mqtt_client: AquatlantisOriMQTTClient, mock_mqtt_client: MagicMock, caplog: LogCaptureFixture) -> None:
     """Test that on_disconnect method logs unexpected disconnections."""
     with caplog.at_level("WARNING"):
-        mqtt_client._on_disconnect(mock_mqtt_client, {}, 1, None)
+        mqtt_client._on_disconnect(mock_mqtt_client, {}, DisconnectFlags(is_disconnect_packet_from_server=True), 1, None)
     assert "Unexpected disconnection" in caplog.text
 
 
