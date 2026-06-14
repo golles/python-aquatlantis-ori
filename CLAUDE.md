@@ -81,6 +81,10 @@ Tests are in `tests/` and split by concern: `test_device.py`, `test_helpers.py`,
 
 Shared fixtures are in `tests/conftest.py`: `sample_http_data`, `sample_mqtt_data`, `sample_online_status_payload`, `sample_offline_status_payload`.
 
+### Manual validation against a live device
+
+`examples/validate.py` connects to the real service and prints parsed device state, useful for sanity-checking changes against actual hardware. Credentials come from the `AQUATLANTIS_USERNAME` / `AQUATLANTIS_PASSWORD` environment variables, or a `.env` file in the working directory (`KEY=value` format) — never hardcode them. **It must stay strictly read-only — never add `set_*` / power / light calls; this drives a real aquarium.** The only outbound MQTT it should ever produce is the `property.get` request the client issues automatically on `connect()`.
+
 ### Linting notes
 
 Ruff is configured with `select = ["ALL"]` — all rules are enabled by default. Exceptions are documented in `pyproject.toml` (`[tool.ruff.lint.ignore]`). Docstrings follow Google convention. Tests may use assertions (`S101`), access private members (`SLF001`), and magic numbers (`PLR2004`) — these are suppressed per-file.

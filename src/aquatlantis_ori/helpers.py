@@ -11,6 +11,14 @@ def random_id(length: int = 10) -> int:
     return random.randint(10 ** (length - 1), 10**length - 1)  # noqa: S311
 
 
+def validate_range(name: str, value: int, low: int, high: int) -> int:
+    """Validate that a value falls within an inclusive range."""
+    if not low <= value <= high:
+        msg = f"{name} must be between {low} and {high}, got {value}."
+        raise ValueError(msg)
+    return value
+
+
 def ms_timestamp_to_datetime(value: str) -> datetime:
     """Convert a timestamp in milliseconds to a datetime object."""
     return datetime.fromtimestamp(int(value) / 1000, tz=UTC)
@@ -55,11 +63,15 @@ def time_curves_from_list(data: list[int]) -> list[TimeCurve]:
     if not data:
         return []
 
-    # Skip the first item which is the length.
+    count = data[0]
     entries = data[1:]
 
     if len(entries) % 7 != 0:
         msg = "Timecurve data length is not a multiple of 7 after skipping the count."
+        raise ValueError(msg)
+
+    if count != len(entries) // 7:
+        msg = f"Timecurve count ({count}) does not match the number of entries ({len(entries) // 7})."
         raise ValueError(msg)
 
     return [TimeCurve(*entries[i : i + 7]) for i in range(0, len(entries), 7)]
@@ -90,15 +102,11 @@ def light_options_from_list(data: list[int]) -> LightOptions:
         msg = f"Light options data must contain exactly {no_of_fields} elements: [intensity, red, green, blue, white]."
         raise ValueError(msg)
 
-    options = LightOptions()
-    if data[0]:
-        options.intensity = data[0]
-    if data[1]:
-        options.red = data[1]
-    if data[2]:
-        options.green = data[2]
-    if data[3]:
-        options.blue = data[3]
-    if data[4]:
-        options.white = data[4]
-    return options
+    # 0 is a valid value (e.g. a channel turned fully off), so don't filter it out.
+    return LightOptions(
+        intensity=data[0],
+        red=data[1],
+        green=data[2],
+        blue=data[3],
+        white=data[4],
+    )

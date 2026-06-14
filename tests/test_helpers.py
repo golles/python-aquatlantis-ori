@@ -13,6 +13,7 @@ from aquatlantis_ori.helpers import (
     random_id,
     threshold_from_list,
     time_curves_from_list,
+    validate_range,
 )
 from aquatlantis_ori.models import LightOptions, Threshold, TimeCurve
 
@@ -32,6 +33,19 @@ def test_random_id_custom_length(length: int) -> None:
     assert isinstance(result, int)
     assert len(str(result)) == length
     assert 10 ** (length - 1) <= result < 10**length
+
+
+@pytest.mark.parametrize("value", [0, 50, 100])
+def test_validate_range_within_bounds_returns_value(value: int) -> None:
+    """Values within the inclusive range are returned unchanged."""
+    assert validate_range("intensity", value, 0, 100) == value
+
+
+@pytest.mark.parametrize("value", [-1, 101])
+def test_validate_range_out_of_bounds_raises(value: int) -> None:
+    """Values outside the inclusive range raise ValueError."""
+    with pytest.raises(ValueError, match="intensity must be between 0 and 100"):
+        validate_range("intensity", value, 0, 100)
 
 
 def test_ms_timestamp_to_datetime() -> None:
@@ -107,6 +121,12 @@ def test_make_time_curves_invalid_length() -> None:
         time_curves_from_list([2, 1, 2, 3, 4, 5])
 
 
+def test_make_time_curves_count_mismatch() -> None:
+    """Test time_curves_from_list when the declared count does not match the entries."""
+    with pytest.raises(ValueError, match=r"Timecurve count .* does not match the number of entries"):
+        time_curves_from_list([2, 12, 30, 75, 100, 80, 60, 40])
+
+
 def test_make_time_curves_valid() -> None:
     """Test _make_time_curves with valid data."""
     data = [1, 12, 30, 75, 100, 80, 60, 40]
@@ -162,15 +182,26 @@ def test_list_from_time_curves() -> None:
 
 def test_light_options_from_list() -> None:
     """Test light_options_from_list with valid data."""
-    data = [75, 255, 128, 64, 200]
+    data = [75, 95, 85, 64, 55]
     result = light_options_from_list(data)
 
     assert isinstance(result, LightOptions)
     assert result.intensity == 75
-    assert result.red == 255
-    assert result.green == 128
+    assert result.red == 95
+    assert result.green == 85
     assert result.blue == 64
-    assert result.white == 200
+    assert result.white == 55
+
+
+def test_light_options_from_list_preserves_zero() -> None:
+    """Zero is a valid value (e.g. a channel turned fully off) and must not be dropped."""
+    result = light_options_from_list([0, 50, 0, 0, 0])
+
+    assert result.intensity == 0
+    assert result.red == 50
+    assert result.green == 0
+    assert result.blue == 0
+    assert result.white == 0
 
 
 @pytest.mark.parametrize(
