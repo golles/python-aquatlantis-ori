@@ -83,7 +83,7 @@ Shared fixtures are in `tests/conftest.py`: `sample_http_data`, `sample_mqtt_dat
 
 ### Manual validation against a live device
 
-`examples/validate.py` connects to the real service and prints parsed device state, useful for sanity-checking changes against actual hardware. Credentials come from the `AQUATLANTIS_USERNAME` / `AQUATLANTIS_PASSWORD` environment variables (never hardcode them). **It must stay strictly read-only — never add `set_*` / power / light calls; this drives a real aquarium.** The only outbound MQTT it should ever produce is the `property.get` request the client issues automatically on `connect()`.
+`examples/validate.py` connects to the real service and prints parsed device state, useful for sanity-checking changes against actual hardware. Credentials come from the `AQUATLANTIS_USERNAME` / `AQUATLANTIS_PASSWORD` environment variables, or a `.env` file in the working directory (`KEY=value` format) — never hardcode them. **It must stay strictly read-only — never add `set_*` / power / light calls; this drives a real aquarium.** The only outbound MQTT it should ever produce is the `property.get` request the client issues automatically on `connect()`.
 
 ### Linting notes
 

@@ -5,17 +5,18 @@ NEVER sends control actions (no ``set_*`` / power / light calls); the only
 outbound MQTT is the ``property.get`` request the client issues on connect to
 fetch current state.
 
-Credentials are read from the environment so they are never committed:
+Credentials are read from the environment or a ``.env`` file in the working
+directory (``KEY=value`` format, lines starting with ``#`` are ignored):
 
-    export AQUATLANTIS_USERNAME="you@example.com"
-    export AQUATLANTIS_PASSWORD="your-password"
-    uv run python examples/validate.py
+    AQUATLANTIS_USERNAME=you@example.com
+    AQUATLANTIS_PASSWORD=your-password
 """
 
 import asyncio
 import logging
 import os
 import warnings
+from pathlib import Path
 
 from aquatlantis_ori import AquatlantisOriClient
 
@@ -37,8 +38,20 @@ def _check_channel(name: str, value: int | None) -> None:
     print(f"  {name:7}: {value}  range {CHANNEL_MIN}-{CHANNEL_MAX} {'OK' if in_range else 'OUT OF RANGE'}")
 
 
+def _load_dotenv() -> None:
+    """Load KEY=value pairs from .env into the environment (no-op if absent)."""
+    env_file = Path(".env")
+    if not env_file.exists():
+        return
+    for line in env_file.read_text(encoding="utf-8").splitlines():
+        if line and not line.startswith("#") and "=" in line:
+            k, _, v = line.partition("=")
+            os.environ.setdefault(k.strip(), v.strip())
+
+
 async def main() -> None:
     """Connect read-only and print parsed device state."""
+    _load_dotenv()
     username = os.environ.get("AQUATLANTIS_USERNAME")
     password = os.environ.get("AQUATLANTIS_PASSWORD")
     if not username or not password:
