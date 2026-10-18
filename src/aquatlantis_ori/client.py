@@ -179,7 +179,7 @@ class AquatlantisOriClient:
             elif not ("/reqfrom/" in message.topic or "/ntp/" in message.topic or message.topic.endswith("/property/set")):
                 # Log unsupported topics
                 logger.debug("Received message on unsupported topic: %s with payload: %s", message.topic, message.payload.decode("utf-8"))
-        except (ValueError, LookupError, TypeError, UnicodeDecodeError):
+        except ValueError, LookupError, TypeError, UnicodeDecodeError:
             logger.exception("Failed to process message on topic %s", message.topic)
 
     async def close(self: Self) -> None:

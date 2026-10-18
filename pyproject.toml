@@ -54,7 +54,6 @@ source = ["aquatlantis_ori"]
 packages = ["src/aquatlantis_ori"]
 
 [tool.mypy]
-python_version = "3.14"
 
 [tool.pylint]
 max-line-length=150
@@ -68,7 +67,6 @@ log_cli_level = "DEBUG"
 
 [tool.ruff]
 line-length = 150
-target-version = "py313"
 
 [tool.ruff.lint]
 select = ["ALL"]
