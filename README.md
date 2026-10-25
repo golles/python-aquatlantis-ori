@@ -77,6 +77,8 @@ if __name__ == "__main__":
 - `AvailabilityType.AVAILABLE`: Recent MQTT telemetry or an explicit online status proves the device is alive.
 - `AvailabilityType.UNAVAILABLE`: A fresh explicit offline status was received, or MQTT activity has gone stale.
 
+MQTT activity is considered stale after 6 minutes. Because not every device publishes telemetry on its own, the client requests the state of every device every 2 minutes while MQTT is connected, so a responsive device stays available. This keepalive starts on `connect()` and stops on `close()`.
+
 ## Contributing
 
 Contributions are welcome! Please familiarize yourself with the [contribution guidelines](CONTRIBUTING.md). This document will also help you set up your development environment.

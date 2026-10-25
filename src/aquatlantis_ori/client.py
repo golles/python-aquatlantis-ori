@@ -1,6 +1,7 @@
 """Client."""
 
 import asyncio
+import contextlib
 import logging
 from types import TracebackType
 from typing import Self
@@ -8,6 +9,7 @@ from typing import Self
 import paho.mqtt.client as mqtt
 from aiohttp import ClientSession
 
+from aquatlantis_ori.const import MQTT_KEEPALIVE_INTERVAL
 from aquatlantis_ori.device import Device
 from aquatlantis_ori.exceptions import AquatlantisOriError
 from aquatlantis_ori.http.client import AquatlantisOriHTTPClient
@@ -26,6 +28,7 @@ class AquatlantisOriClient:
     _http_client: AquatlantisOriHTTPClient
     _mqtt_client: AquatlantisOriMQTTClient | None
     _devices: list[Device]
+    _keepalive_task: asyncio.Task[None] | None
 
     def __init__(self, username: str, password: str, session: ClientSession | None = None) -> None:
         """Initialize the client."""
@@ -34,6 +37,7 @@ class AquatlantisOriClient:
         self._http_client = AquatlantisOriHTTPClient(session=session)
         self._mqtt_client: AquatlantisOriMQTTClient | None = None
         self._devices = []
+        self._keepalive_task = None
 
     async def connect(self: Self) -> None:
         """Connect to the Aquatlantis Ori service."""
@@ -57,7 +61,46 @@ class AquatlantisOriClient:
         self._mqtt_client.connect()
 
         await self._init_devices(self._mqtt_client)
+        self._start_keepalive()
         await self.check_firmware_updates()
+
+    def _start_keepalive(self: Self) -> None:
+        """Start the keepalive task, unless it is already running."""
+        if self._keepalive_task and not self._keepalive_task.done():
+            return
+
+        self._keepalive_task = asyncio.create_task(self._keepalive_loop())
+
+    async def _keepalive_loop(self: Self) -> None:
+        """Periodically request the state of all devices.
+
+        Not every device publishes telemetry on its own, so without these requests
+        ``Device.availability_state`` would go stale after the freshness window.
+        """
+        while True:
+            await asyncio.sleep(MQTT_KEEPALIVE_INTERVAL.total_seconds())
+
+            if not self._mqtt_client or not self._mqtt_client.is_connected():
+                logger.debug("MQTT not connected, skipping keepalive")
+                continue
+
+            # Iterate over a snapshot; the device list may be replaced by a reconnect.
+            for device in list(self._devices):
+                # A failing request must not stop the keepalive for other devices or later iterations.
+                try:
+                    device.force_update()
+                except Exception:  # pylint: disable=broad-exception-caught
+                    logger.exception("Keepalive request failed for device %s", device.devid)
+
+    async def _stop_keepalive(self: Self) -> None:
+        """Stop the keepalive task."""
+        if not self._keepalive_task:
+            return
+
+        task, self._keepalive_task = self._keepalive_task, None
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 
     async def _login(self: Self) -> UserLoginResponseData | None:
         """Login to the Aquatlantis Ori service."""
@@ -184,6 +227,7 @@ class AquatlantisOriClient:
 
     async def close(self: Self) -> None:
         """Close client."""
+        await self._stop_keepalive()
         await self._http_client.close()
 
         if self._mqtt_client and self._mqtt_client.is_connected():

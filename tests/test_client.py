@@ -3,7 +3,7 @@
 
 import asyncio
 from collections.abc import Generator
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -63,6 +63,7 @@ async def test_connect_success(client: AquatlantisOriClient, mock_http_client: M
     await client.connect()
     assert client._mqtt_client is mock_mqtt_client
     mock_mqtt_client.connect.assert_called_once()
+    await client.close()
 
 
 async def test_connect_login_error(client: AquatlantisOriClient, mock_http_client: MagicMock) -> None:
@@ -359,6 +360,130 @@ async def test_close_without_connected_mqtt(client: AquatlantisOriClient, mock_h
     await client.close()
     mock_http_client.close.assert_awaited()
     mock_mqtt_client.disconnect.assert_not_called()
+
+
+KEEPALIVE_INTERVAL = timedelta(milliseconds=1)
+
+
+def _setup_connect(mock_http_client: MagicMock, devices: list[MagicMock]) -> None:
+    """Set up the mocks so connect() succeeds and yields the given devices."""
+    mock_http_client.login = AsyncMock(return_value=MagicMock(data=MagicMock()))
+    mock_http_client.list_all_devices = AsyncMock(return_value=MagicMock(data=MagicMock(devices=devices)))
+    mock_http_client.latest_firmware = AsyncMock(return_value=MagicMock(data=None))
+    mock_http_client.close = AsyncMock()
+
+
+async def _wait_for_calls(mock: MagicMock, count: int) -> None:
+    """Wait (at most a second) until the mock has been called at least `count` times."""
+    async with asyncio.timeout(1):
+        while True:
+            if mock.call_count >= count:
+                return
+            await asyncio.sleep(0)
+
+
+@pytest.fixture(name="keepalive_devices")
+def fixture_keepalive_devices() -> Generator[list[MagicMock]]:
+    """Fixture for devices created by connect(), with a short keepalive interval."""
+    devices = [MagicMock(devid="dev1"), MagicMock(devid="dev2")]
+    with (
+        patch("aquatlantis_ori.client.Device", side_effect=devices),
+        patch("aquatlantis_ori.client.MQTT_KEEPALIVE_INTERVAL", KEEPALIVE_INTERVAL),
+    ):
+        yield devices
+
+
+async def test_keepalive_requests_update_for_all_devices(
+    client: AquatlantisOriClient, mock_http_client: MagicMock, mock_mqtt_client: MagicMock, keepalive_devices: list[MagicMock]
+) -> None:
+    """Test that the keepalive calls force_update for all devices after the interval."""
+    _setup_connect(mock_http_client, [MagicMock(), MagicMock()])
+    mock_mqtt_client.is_connected.return_value = True
+
+    await client.connect()
+    await _wait_for_calls(keepalive_devices[0].force_update, 2)
+    await _wait_for_calls(keepalive_devices[1].force_update, 2)
+    await client.close()
+
+
+async def test_keepalive_skipped_when_mqtt_not_connected(
+    client: AquatlantisOriClient, mock_http_client: MagicMock, mock_mqtt_client: MagicMock, keepalive_devices: list[MagicMock]
+) -> None:
+    """Test that the keepalive does not call force_update while MQTT is not connected."""
+    _setup_connect(mock_http_client, [MagicMock(), MagicMock()])
+    mock_mqtt_client.is_connected.return_value = False
+
+    await client.connect()
+    # Each iteration checks the connection; wait for a few iterations to have passed.
+    await _wait_for_calls(mock_mqtt_client.is_connected, 3)
+    await client.close()
+
+    for device in keepalive_devices:
+        device.force_update.assert_not_called()
+
+
+async def test_keepalive_stopped_after_close(
+    client: AquatlantisOriClient, mock_http_client: MagicMock, mock_mqtt_client: MagicMock, keepalive_devices: list[MagicMock]
+) -> None:
+    """Test that the keepalive task is stopped by close() and no more updates follow."""
+    _setup_connect(mock_http_client, [MagicMock(), MagicMock()])
+    mock_mqtt_client.is_connected.return_value = True
+
+    async with client:
+        await client.connect()
+        task = client._keepalive_task
+        assert task is not None
+        await _wait_for_calls(keepalive_devices[0].force_update, 1)
+
+    assert task.cancelled()
+    assert client._keepalive_task is None
+    call_count = keepalive_devices[0].force_update.call_count
+    await asyncio.sleep(KEEPALIVE_INTERVAL.total_seconds() * 20)
+    assert keepalive_devices[0].force_update.call_count == call_count
+
+
+async def test_keepalive_continues_after_exception(
+    client: AquatlantisOriClient,
+    mock_http_client: MagicMock,
+    mock_mqtt_client: MagicMock,
+    keepalive_devices: list[MagicMock],
+    caplog: LogCaptureFixture,
+) -> None:
+    """Test that an exception during an iteration does not stop the keepalive."""
+    _setup_connect(mock_http_client, [MagicMock(), MagicMock()])
+    mock_mqtt_client.is_connected.return_value = True
+    keepalive_devices[0].force_update.side_effect = RuntimeError("boom")
+
+    await client.connect()
+    await _wait_for_calls(keepalive_devices[0].force_update, 3)
+    await _wait_for_calls(keepalive_devices[1].force_update, 3)
+    assert client._keepalive_task is not None
+    assert not client._keepalive_task.done()
+    await client.close()
+
+    assert "Keepalive request failed for device dev1" in caplog.text
+
+
+async def test_keepalive_not_duplicated_on_reconnect(client: AquatlantisOriClient, mock_http_client: MagicMock, mock_mqtt_client: MagicMock) -> None:
+    """Test that a second connect() does not start a second keepalive task."""
+    _setup_connect(mock_http_client, [])
+    mock_mqtt_client.is_connected.return_value = True
+
+    await client.connect()
+    task = client._keepalive_task
+    assert task is not None
+    await client.connect()
+    assert client._keepalive_task is task
+    assert not task.done()
+    await client.close()
+
+
+async def test_close_without_keepalive(client: AquatlantisOriClient, mock_http_client: MagicMock) -> None:
+    """Test that close() works when the keepalive was never started."""
+    mock_http_client.close = AsyncMock()
+    await client._stop_keepalive()
+    await client.close()
+    assert client._keepalive_task is None
 
 
 async def test_async_context_manager(client: AquatlantisOriClient) -> None:
