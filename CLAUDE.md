@@ -55,7 +55,7 @@ The client supports `async with` and exposes `wait_for_data()` to poll until all
 
 ### Device availability
 
-`Device.status` reflects the raw vendor protocol state (ONLINE/OFFLINE from MQTT `/status` messages). Do not use it as the canonical availability signal — use `Device.availability_state` (`AvailabilityType`) instead. `availability_state` is derived from recency of any inbound MQTT activity, using a 6-minute freshness window (`MQTT_AVAILABILITY_FRESHNESS_WINDOW` in `const.py`); device telemetry arrives approximately every 5 minutes.
+`Device.status` reflects the raw vendor protocol state (ONLINE/OFFLINE from MQTT `/status` messages). Do not use it as the canonical availability signal — use `Device.availability_state` (`AvailabilityType`) instead. `availability_state` is derived from recency of any inbound MQTT activity, using a 6-minute freshness window (`MQTT_AVAILABILITY_FRESHNESS_WINDOW` in `const.py`). Not every device publishes telemetry on its own (a lamp-only Ori on firmware 13 only answers `property.get`), so `AquatlantisOriClient.connect()` starts a keepalive task that calls `force_update()` on every device each `MQTT_KEEPALIVE_INTERVAL` (2 minutes) while MQTT is connected; `close()` cancels it.
 
 ### Key encoding quirks (from the reversed API)
 
